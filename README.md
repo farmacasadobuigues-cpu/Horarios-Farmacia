@@ -6,7 +6,7 @@ Abre `index.html` en cualquier navegador: no necesita instalación ni servidor. 
 
 ## Imagen
 
-Colores y tipografía (Titillium Web) del manual de identidad de la farmacia, con el anagrama «Cb». Cada persona tiene un avatar friki en broma (Maestro Jedi, Once, La Duquesa, Madre de dragones, Miércoles, El niño mago, Droide), que se elige en Equipo.
+Colores y tipografía (Titillium Web) del manual de identidad de la farmacia, con el anagrama «Cb». Cada persona tiene un avatar friki en broma (Maestro Jedi, Once, La Duquesa, Madre de dragones, Miércoles, El niño mago, Droide), que se elige en Equipo. Con el botón «Foto» se puede poner una imagen propia a cada persona.
 
 ## Qué hace
 

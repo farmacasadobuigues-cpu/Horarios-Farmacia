@@ -127,7 +127,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .role-auxiliar { --c: var(--r-aux); --cs: var(--r-aux-soft); }
 .role-estudiante { --c: var(--r-est); --cs: var(--r-est-soft); }
 .av { width: 34px; height: 34px; border-radius: 30%; overflow: hidden; flex: none; display: inline-block; background: var(--sage); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--line); }
-.av svg { width: 100%; height: 100%; display: block; }
+.av svg, .av img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .who .av { box-shadow: 0 0 0 2px var(--accent); }
 .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; background: var(--c); }
 .badge { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 8px; border-radius: 4px; background: var(--cs); color: var(--c); white-space: nowrap; }
@@ -631,7 +631,7 @@ tr.nowrow td { background: var(--accent-soft); }
   };
   const AV_DEFAULT = { s2: 'jedi', s3: 'duquesa', s4: 'once', s5: 'dragones', s6: 'miercoles' };
   const avKey = p => (p.avatar && AVATARS[p.avatar]) ? p.avatar : (AV_DEFAULT[p.id] || 'droide');
-  const avatar = p => { const a = AVATARS[avKey(p)]; return '<span class="av" title="' + esc(a.label + ' · ' + a.serie) + '" aria-hidden="true"><svg viewBox="0 0 64 64">' + a.svg + '</svg></span>'; };
+  const avatar = p => { if (p.photo) return '<span class="av photo" aria-hidden="true"><img src="' + p.photo + '" alt=""></span>'; const a = AVATARS[avKey(p)]; return '<span class="av" title="' + esc(a.label + ' · ' + a.serie) + '" aria-hidden="true"><svg viewBox="0 0 64 64">' + a.svg + '</svg></span>'; };
   const avCaption = p => { const a = AVATARS[avKey(p)]; return a.label + ' · ' + a.serie; };
   const avPicker = (name, sel) => '<div class="avpick" role="radiogroup" aria-label="Avatar">' + Object.keys(AVATARS).map(k =>
     '<label><input type="radio" name="' + name + '" value="' + k + '"' + (k === sel ? ' checked' : '') + '><span class="av"><svg viewBox="0 0 64 64">' + AVATARS[k].svg + '</svg></span>' + esc(AVATARS[k].label) + '</label>').join('') + '</div>';
@@ -921,7 +921,9 @@ tr.nowrow td { background: var(--accent-soft); }
         '<td class="num">' + fmtH(hoursWeek(p.id)) + '</td>' +
         '<td><div class="rowact">' + (confirming
           ? '<span class="muted" style="font-size:.85rem">¿Dar de baja?</span><button class="btn danger solid sm" data-act="baja-yes" data-id="' + p.id + '">Sí, dar de baja</button><button class="btn sm" data-act="cancel">No</button>'
-          : '<button class="btn sm" data-act="edit" data-id="' + p.id + '">Editar</button>' + (p.role === 'titular' ? '' : '<button class="btn danger sm" data-act="baja" data-id="' + p.id + '">Dar de baja</button>')) +
+          : '<label class="btn sm" title="Sube una imagen para su avatar">Foto<input type="file" accept="image/*" data-act="photo" data-id="' + p.id + '" hidden></label>' +
+            (p.photo ? '<button class="btn sm" data-act="photo-del" data-id="' + p.id + '">Quitar foto</button>' : '') +
+            '<button class="btn sm" data-act="edit" data-id="' + p.id + '">Editar</button>' + (p.role === 'titular' ? '' : '<button class="btn danger sm" data-act="baja" data-id="' + p.id + '">Dar de baja</button>')) +
         '</div></td></tr>';
     }).join('');
 
@@ -946,6 +948,7 @@ tr.nowrow td { background: var(--accent-soft); }
         '</section>' +
         '<section class="panel"><div class="panel-h"><h2>Equipo en activo</h2><span class="muted" style="font-size:.85rem">' + act.length + ' personas · horas de esta semana</span></div>' +
           '<div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Turno habitual</th><th>Alta</th><th class="num">Horas</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+          '<p class="note">Con «Foto» puedes poner a cada persona una imagen pequeña de su personaje (JPG o PNG). Se recorta en cuadrado y sustituye al dibujo; «Quitar foto» lo devuelve.</p>' +
         '</section>' +
         (gone.length ? '<section class="panel"><div class="panel-h"><h2>Bajas</h2></div><div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Fecha de baja</th><th></th></tr></thead><tbody>' + goneRows + '</tbody></table></div></section>' : '') +
       '</div>' +
@@ -1180,6 +1183,7 @@ tr.nowrow td { background: var(--accent-soft); }
         ui.editing = null; save(); toast('Datos actualizados.'); break;
       }
       case 'reset': ui.confirm = 'reset'; break;
+      case 'photo-del': delete byId(id).photo; save(); toast('Foto quitada; vuelve el dibujo.'); break;
       case 'hol-del': delete S.holidays[el.dataset.d]; refreshWeekOf(el.dataset.d); save(); toast('Festivo quitado.'); break;
       case 'reset-yes': S = seed(); ui.confirm = null; save(); toast('Equipo inicial restaurado.'); break;
       case 'copy': {
@@ -1206,6 +1210,27 @@ tr.nowrow td { background: var(--accent-soft); }
     const el = e.target;
     const act = el.dataset.act;
     if (!act) return;
+    if (act === 'photo') {
+      const file = el.files && el.files[0];
+      if (!file) return;
+      // Se recorta en cuadrado y se reduce a 120 px para que ocupe poco.
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const size = 120, side = Math.min(img.width, img.height);
+          const c = document.createElement('canvas'); c.width = c.height = size;
+          c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+          const p = byId(el.dataset.id);
+          p.photo = c.toDataURL('image/jpeg', 0.85);
+          save(); render(); toast('Foto puesta a ' + p.name.split(' ')[0] + '.');
+        };
+        img.onerror = () => toast('No se ha podido leer la imagen. Prueba con un JPG o PNG.');
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
     if (act === 'resp') {
       const a = S.schedule[el.dataset.key][el.dataset.sh].find(x => x.id === el.dataset.id);
       a.resp = el.value;
