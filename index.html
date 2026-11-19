@@ -107,7 +107,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .tabs button[aria-selected="true"] { background: var(--on-brand); color: var(--brand); }
 :root[data-theme="dark"] .tabs button[aria-selected="true"] { background: var(--accent); color: #062126; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tabs button[aria-selected="true"] { background: var(--accent); color: #062126; } }
-@media (max-width: 560px) { .tabs { width: 100%; } .tabs button { flex: 1; padding-inline: 4px; } }
+@media (max-width: 560px) { .tabs { width: 100%; } .tabs button { flex: 1 1 auto; padding-inline: 6px; font-size: 0.92rem; } }
 
 /* Ahora */
 .now { background: var(--brand-glass); border: 1px solid var(--brand-line); border-radius: var(--radius); padding: 14px 18px; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 12px 24px; align-items: center; }
@@ -254,6 +254,27 @@ textarea { font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; min-
 table.year td { padding-block: 6px; }
 tr.nowrow td { background: var(--accent-soft); }
 .nowrap { white-space: nowrap; }
+.yp.vac { opacity: 0.55; } .yp small { font-weight: 600; color: var(--warn); }
+.pp.vac { opacity: 0.6; border-style: dashed; } .pp.vac .r { color: var(--warn); }
+/* Vacaciones */
+.vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 14px; min-width: 0; }
+.vcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow); min-width: 0; }
+.vhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.vleft { display: flex; align-items: center; gap: 8px; text-align: right; }
+.vleft strong { font-size: 2.1rem; line-height: 1; color: var(--brand); font-weight: 700; }
+:root[data-theme="dark"] .vleft strong { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .vleft strong { color: var(--accent); } }
+.vleft span { font-size: 0.78rem; color: var(--muted); line-height: 1.15; text-align: left; }
+.vbar { display: flex; height: 12px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.vbar span { display: block; height: 100%; }
+.vt { background: var(--brand-2); } .vp { background: var(--accent); } .vf { background: var(--surface-2); border: 1px solid var(--line); }
+.vnums { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.85rem; color: var(--muted); }
+.vnums span { display: inline-flex; align-items: center; gap: 5px; } .vnums strong { color: var(--fg); }
+.vnums i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.vlist { display: flex; flex-wrap: wrap; gap: 6px; }
+.vchip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 2px 1px 9px; border-radius: 4px; background: var(--accent-soft); color: var(--accent-ink); font-size: 0.85rem; font-weight: 600; }
+.vchip.done { background: var(--surface-2); color: var(--muted); }
+.banner.pub { background: var(--accent-soft); color: var(--fg); border: 1px solid var(--accent); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
 .hol { font-size: 0.78rem; font-weight: 700; color: var(--warn); }
 .holrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 0.95rem; }
 
@@ -286,6 +307,7 @@ tr.nowrow td { background: var(--accent-soft); }
         <button role="tab" data-tab="cuadrante" id="tab-cuadrante">Cuadrante</button>
         <button role="tab" data-tab="equipo" id="tab-equipo">Equipo</button>
         <button role="tab" data-tab="anual" id="tab-anual">Año</button>
+        <button role="tab" data-tab="vacaciones" id="tab-vacaciones">Vacaciones</button>
         <button role="tab" data-tab="ajustes" id="tab-ajustes">Ajustes</button>
       </nav>
     </div>
@@ -295,7 +317,8 @@ tr.nowrow td { background: var(--accent-soft); }
 <main class="wrap app" id="main"></main>
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script>
+<script type="application/json" id="estado">null</script>
+<script id="app-main">
 (function () {
   'use strict';
 
@@ -349,10 +372,26 @@ tr.nowrow td { background: var(--accent-soft); }
   }
 
   let S = null;
+  // En claude.ai el cuadrante va dentro de la propia página (bloque «estado»): cualquiera con el
+  // enlace lo ve sin cuenta, y quien puede editar lo vuelve a publicar con sus cambios.
+  // Abierto como archivo suelto, funciona en local con los datos del navegador.
   const SYNC_ON = !!(window.claude && typeof window.claude.use === 'function');
-  const sync = { db: null, canEdit: !SYNC_ON, ready: false, sent: {}, queue: Promise.resolve(), timer: null };
-  const remote = { config: undefined, years: null, fotos: null };
-  try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  const sync = { canEdit: !SYNC_ON, artifact: null, dirty: false, publishing: false };
+  let EMB = null;
+  try { EMB = JSON.parse(document.getElementById('estado').textContent); } catch (e) { EMB = null; }
+  // Fuente de la página tal como se publicó (para volver a publicarla con el estado nuevo).
+  const PAGE_SOURCE = (() => {
+    const html = document.body.innerHTML;
+    const start = html.indexOf('<title>');
+    const mainAt = html.indexOf('id="app-main"');
+    const end = mainAt < 0 ? -1 : html.indexOf('</' + 'script>', mainAt);
+    const hero = html.indexOf('class="hero"');
+    const ok = start >= 0 && end > 0 && hero > start && hero < mainAt && html.indexOf('id="estado"') > hero;
+    return ok ? html.slice(start, end + 9) : null;
+  })();
+  const PAGE_RESET = (() => { const st = document.head && document.head.querySelector('style'); return st ? st.textContent : ''; })();
+  if (EMB && Array.isArray(EMB.staff)) S = JSON.parse(JSON.stringify(EMB));
+  else if (!SYNC_ON) { try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; } }
   if (!S || !Array.isArray(S.staff)) S = seed();
   let openYearView = false;
   function migrate() {
@@ -484,14 +523,25 @@ tr.nowrow td { background: var(--accent-soft); }
     S.staff.forEach(p => { if (!p.avatar) p.avatar = av[p.name.split(' ')[0]] || 'droide'; });
     S.version = 14;
   }
+  if (S.version < 15) {
+    // Vacaciones: 30 días naturales al año por persona.
+    S.vacations = S.vacations || [];
+    S.settings.vacDays = S.settings.vacDays || 30;
+    S.version = 15;
+  }
   }
   migrate();
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ }
-    if (typeof scheduleFlush === 'function') scheduleFlush();
+    if (!SYNC_ON) { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } return; }
+    // Cambios de quien edita: borrador en este navegador hasta pulsar «Publicar para el equipo».
+    if (sync.canEdit && ui.userEdit) {
+      sync.dirty = true;
+      try { localStorage.setItem(KEY + ':draft', JSON.stringify({ baseRev: EMB && EMB.rev || null, S })); } catch (e) {}
+    }
   }
 
-  const ui = { tab: 'cuadrante', week: mondayOf(new Date()), year: 2027, confirm: null, editing: null };
+  const ui = { tab: 'cuadrante', week: mondayOf(new Date()), year: 2027, confirm: null, editing: null, userEdit: false };
+  try { const w = sessionStorage.getItem(KEY + ':week'); if (w) ui.week = parse(w); sessionStorage.removeItem(KEY + ':week'); } catch (e) {}
   try { const t = localStorage.getItem(KEY + ':tab'); if (t) ui.tab = t; } catch (e) {}
   if (openYearView) { ui.tab = 'anual'; save(); }
 
@@ -527,6 +577,23 @@ tr.nowrow td { background: var(--accent-soft); }
     ? 'Semanas alternas · esta semana de ' + (effPref({ shift: code }, mondayOf(new Date())) === 'M' ? 'mañana' : 'tarde')
     : code === 'T' ? 'Tarde' : 'Mañana';
   // Responsable de turno: un farmacéutico o una persona marcada como responsable.
+  // ---------- Vacaciones ----------
+  const onVac = (id, key) => (S.vacations || []).some(v => v.staffId === id && v.from <= key && key <= v.to);
+  const dayCount = (a, b) => Math.round((parse(b) - parse(a)) / 864e5) + 1;
+  const clipDays = (v, a, b) => { const x = v.from > a ? v.from : a, y = v.to < b ? v.to : b; return x <= y ? dayCount(x, y) : 0; };
+  const vacAllowance = () => (S.settings && S.settings.vacDays) || 30;
+  function vacSummary(id, year) {
+    const y0 = year + '-01-01', y1 = year + '-12-31';
+    const yesterday = ymd(addDays(new Date(), -1));
+    let taken = 0, planned = 0;
+    (S.vacations || []).filter(v => v.staffId === id).forEach(v => {
+      const all = clipDays(v, y0, y1);
+      const past = yesterday >= y0 ? clipDays(v, y0, yesterday < y1 ? yesterday : y1) : 0;
+      taken += past; planned += all - past;
+    });
+    const total = vacAllowance();
+    return { taken, planned, total, left: total - taken, free: total - taken - planned };
+  }
   const isLead = p => !!p && (isPharm(p) || !!p.lead);
   // Sábado: jornada corta de mañana con rotación propia.
   const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
@@ -731,8 +798,11 @@ tr.nowrow td { background: var(--accent-soft); }
     const list = (day && day[sh]) || [];
     const out = [];
     const people = list.map(a => byId(a.id)).filter(Boolean);
-    const valid = people.filter(p => activeOn(p, key));
+    const present = people.filter(p => activeOn(p, key));
+    const valid = present.filter(p => !onVac(p.id, key));
     const count = valid.filter(p => p.role !== 'estudiante').length;
+    const vacNames = present.filter(p => onVac(p.id, key)).map(p => p.name.split(' ')[0]);
+    if (vacNames.length) out.push({ lvl: 'warn', t: 'De vacaciones: ' + vacNames.join(', ') });
     if (keySat(key)) { if (!valid.some(canLeadSat)) out.push({ lvl: 'err', t: 'Falta alguien que pueda llevar el sábado' }); }
     else if (!valid.some(isLead)) out.push({ lvl: 'err', t: 'Sin farmacéutico ni responsable' });
     const n = needOn(key, sh);
@@ -767,7 +837,7 @@ tr.nowrow td { background: var(--accent-soft); }
     if (isOpenDay(now) && shiftNow && day) {
       state = nowShifts.length > 1 ? 'Cambio de turno <span class="mono muted">' + hm(shTimes(key, 'T')[0]) + '–' + hm(shTimes(key, 'M')[1]) + '</span>'
         : (keySat(key) ? 'Sábado' : 'Turno de ' + SH_LABEL[shiftNow].toLowerCase()) + ' <span class="mono muted">' + shRange(key, shiftNow) + '</span>';
-      people = [].concat(...nowShifts.map(sh => day[sh] || [])).map(a => {
+      people = [].concat(...nowShifts.map(sh => day[sh] || [])).filter(a => !onVac(a.id, key)).map(a => {
         const p = byId(a.id); if (!p) return '';
         return '<span class="who role-' + p.role + '">' + avatar(p) + '<span class="who-t"><strong>' + esc(p.name) + '</strong><small>' + ROLES[p.role].short + ' · ' + RESP[a.resp] + '</small></span></span>';
       }).join('');
@@ -843,7 +913,7 @@ tr.nowrow td { background: var(--accent-soft); }
           '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + needOn(key, sh) + '</span></div><ul>';
         list.forEach(a => {
           const p = byId(a.id); if (!p) return;
-          html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(p.name.trim().split(/\s+/)[0]) + '</span><span class="r">' + ROLES[p.role].short + (p.lead && !isPharm(p) ? ' · Resp.' : '') + '</span></span>' +
+          html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + (onVac(p.id, key) ? ' vac' : '') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(p.name.trim().split(/\s+/)[0]) + '</span><span class="r">' + (onVac(p.id, key) ? 'De vacaciones' : ROLES[p.role].short + (p.lead && !isPharm(p) ? ' · Resp.' : '')) + '</span></span>' +
             '<select class="resp" data-resp="' + a.resp + '" data-act="resp" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Responsabilidad de ' + esc(p.name) + '">' +
             Object.keys(RESP).map(r => '<option value="' + r + '"' + (r === a.resp ? ' selected' : '') + '>' + RESP_SHORT[r] + '</option>').join('') + '</select>' +
             '<button class="iconbtn" data-act="rm" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Quitar a ' + esc(p.name) + ' del turno">×</button></li>';
@@ -879,7 +949,7 @@ tr.nowrow td { background: var(--accent-soft); }
       const day = S.schedule[key]; if (!day) continue;
       SHIFTS.forEach(sh => (day[sh] || []).forEach(a => {
         const r = rows[a.id] || (rows[a.id] = { M: 0, T: 0, S: 0, h: 0, mostrador: 0, admin: 0, gestion: 0, practicas: 0 });
-        r[keySat(key) ? 'S' : sh]++; r[a.resp]++; r.h += shHours(key, sh);
+        if (onVac(a.id, key)) return; r[keySat(key) ? 'S' : sh]++; r[a.resp]++; r.h += shHours(key, sh);
       }));
     }
     const people = S.staff.filter(p => p.active || rows[p.id])
@@ -915,7 +985,7 @@ tr.nowrow td { background: var(--accent-soft); }
     const monday = mondayOf(new Date());
     const hoursWeek = id => {
       let h = 0;
-      for (let i = 0; i < 7; i++) { const day = S.schedule[ymd(addDays(monday, i))]; const k = ymd(addDays(monday, i)); if (day) SHIFTS.forEach(sh => { if ((day[sh] || []).some(a => a.id === id)) h += shHours(k, sh); }); }
+      for (let i = 0; i < 7; i++) { const day = S.schedule[ymd(addDays(monday, i))]; const k = ymd(addDays(monday, i)); if (day) SHIFTS.forEach(sh => { if ((day[sh] || []).some(a => a.id === id) && !onVac(id, k)) h += shHours(k, sh); }); }
       return h;
     };
     const roleOpts = sel => Object.keys(ROLES).map(r => '<option value="' + r + '"' + (r === sel ? ' selected' : '') + '>' + ROLES[r].label + '</option>').join('');
@@ -992,14 +1062,16 @@ tr.nowrow td { background: var(--accent-soft); }
     ensureYear(year);
     const mondays = yearMondays(year);
     const tot = {};
-    const names = list => list.map(a => byId(a.id)).filter(Boolean)
-      .map(p => '<span class="yp role-' + p.role + '">' + avatar(p) + esc(p.name.split(' ')[0]) + '</span>').join('');
     const rows = mondays.map(m => {
+      const vacWeek = id => [0, 1, 2, 3, 4, 5].some(i => onVac(id, ymd(addDays(m, i))));
+      const names = list => list.map(a => byId(a.id)).filter(Boolean)
+        .map(p => '<span class="yp role-' + p.role + (vacWeek(p.id) ? ' vac' : '') + '">' + avatar(p) + esc(p.name.split(' ')[0]) + (vacWeek(p.id) ? ' <small>vacaciones</small>' : '') + '</span>').join('');
       let M = null, T = null, sat = null, satKey = null;
       for (let i = 0; i < 7; i++) {
         const key = ymd(addDays(m, i)); const day = S.schedule[key]; if (!day) continue;
         dayShifts(key).forEach(sh => (day[sh] || []).forEach(a => {
           const t = tot[a.id] || (tot[a.id] = { h: 0, S: 0 });
+          if (onVac(a.id, key)) return;
           t.h += shHours(key, sh); if (keySat(key)) t.S++;
         }));
         if (keySat(key)) { sat = day.M || []; satKey = key; }
@@ -1053,6 +1125,53 @@ tr.nowrow td { background: var(--accent-soft); }
     // la rotación de sábados posterior también cambia
     Object.keys(S.schedule).forEach(k => { if (k > key && keySat(k)) delete S.schedule[k]; });
     generateWeek(m);
+  }
+
+  // ---------- Render: vacaciones ----------
+  function renderVacaciones() {
+    const year = ui.year;
+    const people = activeStaff().filter(p => p.role !== 'estudiante').sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
+    const fmtRange = v => v.from === v.to ? shortDate(parse(v.from)) : shortDate(parse(v.from)) + ' – ' + shortDate(parse(v.to));
+    const cards = people.map(p => {
+      const sm = vacSummary(p.id, year);
+      const pct = n => Math.max(0, Math.min(100, n / sm.total * 100));
+      const periods = (S.vacations || []).filter(v => v.staffId === p.id && clipDays(v, year + '-01-01', year + '-12-31'))
+        .sort((a, b) => a.from.localeCompare(b.from));
+      return '<article class="vcard">' +
+        '<div class="vhead"><span class="person">' + avatar(p) + '<span class="pcap">' + esc(p.name) + '<small>' + ROLES[p.role].short + '</small></span></span>' +
+          '<div class="vleft"><strong>' + sm.left + '</strong><span>días pendientes<br>de disfrutar</span></div></div>' +
+        '<div class="vbar" role="img" aria-label="' + sm.taken + ' disfrutados, ' + sm.planned + ' con fecha y ' + Math.max(0, sm.free) + ' sin fecha de ' + sm.total + '">' +
+          '<span class="vt" style="width:' + pct(sm.taken) + '%"></span><span class="vp" style="width:' + pct(sm.planned) + '%"></span></div>' +
+        '<div class="vnums"><span><i class="vt"></i>Disfrutados <strong>' + sm.taken + '</strong></span><span><i class="vp"></i>Con fecha <strong>' + sm.planned + '</strong></span><span><i class="vf"></i>Sin fecha <strong>' + Math.max(0, sm.free) + '</strong></span></div>' +
+        (sm.free < 0 ? '<div class="issue warn">Se pasa ' + (-sm.free) + ' días de los ' + sm.total + '</div>' : '') +
+        '<div class="vlist">' + (periods.map(v => '<span class="vchip' + (v.to < todayKey() ? ' done' : '') + '">' + fmtRange(v) + ' · ' + clipDays(v, year + '-01-01', year + '-12-31') + ' d' +
+          '<button class="iconbtn" data-act="vac-del" data-id="' + v.id + '" aria-label="Quitar estas vacaciones">×</button></span>').join('') || '<span class="muted">Sin vacaciones con fecha.</span>') + '</div>' +
+      '</article>';
+    }).join('');
+    const upcoming = (S.vacations || []).filter(v => v.to >= todayKey()).sort((a, b) => a.from.localeCompare(b.from)).slice(0, 8);
+    return '<div class="stack">' +
+      '<div class="weekbar"><div class="weeknav">' +
+        '<button class="btn round" data-act="year-prev" aria-label="Año anterior">‹</button>' +
+        '<span class="range">Vacaciones ' + year + '</span>' +
+        '<button class="btn round" data-act="year-next" aria-label="Año siguiente">›</button>' +
+        '<span class="pill ok">' + vacAllowance() + ' días naturales por persona</span>' +
+      '</div></div>' +
+      '<div class="cols">' +
+        '<div class="vgrid">' + cards + '</div>' +
+        '<div class="stack">' +
+          '<section class="panel edit-only"><h2>Añadir vacaciones</h2>' +
+            '<form class="grid" id="vac-form"><div class="field"><label for="vac-who">Persona</label><select id="vac-who">' + people.map(p => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('') + '</select></div>' +
+            '<div class="field"><label for="vac-from">Desde</label><input type="date" id="vac-from" required></div>' +
+            '<div class="field"><label for="vac-to">Hasta (incluido)</label><input type="date" id="vac-to" required></div>' +
+            '<button class="btn primary" type="submit">Añadir</button></form>' +
+            '<p class="note">Cuentan todos los días naturales, también sábados, domingos y festivos. En el cuadrante, esos días la persona sale «De vacaciones» y el turno avisa de que falta alguien.</p>' +
+          '</section>' +
+          '<section class="panel"><h2>Próximas vacaciones</h2>' +
+            (upcoming.map(v => { const p = byId(v.staffId); return p ? '<div class="holrow"><span class="person">' + avatar(p) + esc(p.name.split(' ')[0]) + '</span><span class="nowrap">' + fmtRange(v) + ' · ' + dayCount(v.from, v.to) + ' d</span></div>' : ''; }).join('') || '<p class="note">No hay vacaciones programadas.</p>') +
+            '<p class="note"><strong>Disfrutados:</strong> días ya pasados. <strong>Con fecha:</strong> aprobados y por llegar. <strong>Pendientes de disfrutar:</strong> los ' + vacAllowance() + ' menos los disfrutados.</p>' +
+          '</section>' +
+        '</div>' +
+      '</div></div>';
   }
 
   // ---------- Render: ajustes ----------
@@ -1110,10 +1229,15 @@ tr.nowrow td { background: var(--accent-soft); }
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
     if (!weekHasData(mondayOf(new Date()))) generateWeek(mondayOf(new Date()));
     renderNow();
-    const views = { cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, ajustes: renderAjustes };
+    const views = { cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, vacaciones: renderVacaciones, ajustes: renderAjustes };
     document.getElementById('tab-ajustes').hidden = !sync.canEdit;
     if (!sync.canEdit && ui.tab === 'ajustes') ui.tab = 'cuadrante';
-    document.getElementById('main').innerHTML = (views[ui.tab] || renderCuadrante)();
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
+    const pubBar = SYNC_ON && sync.canEdit && sync.dirty
+      ? '<div class="banner pub"><span><strong>Cambios sin publicar.</strong> El equipo todavía no los ve.</span><span class="actions">' +
+        (sync.publishing ? '<span>Publicando…</span>' : '<button class="btn sm" data-act="discard">Descartar</button><button class="btn primary" data-act="publish">Publicar para el equipo</button>') + '</span></div>'
+      : '';
+    document.getElementById('main').innerHTML = pubBar + (views[ui.tab] || renderCuadrante)();
     if (!sync.canEdit) applyReadOnly();
   }
 
@@ -1158,10 +1282,12 @@ tr.nowrow td { background: var(--accent-soft); }
     toast(p.name + ' dada/o de baja. Turnos pendientes reasignados.');
   }
 
+  const userAct = () => { ui.userEdit = true; setTimeout(() => { ui.userEdit = false; }, 0); };
   document.addEventListener('click', e => {
+    userAct();
     const tab = e.target.closest('[data-tab]');
     if (tab) {
-      ui.tab = tab.dataset.tab; ui.confirm = null; ui.editing = null;
+      ui.tab = tab.dataset.tab; ui.confirm = null; ui.editing = null; ui.userEdit = false;
       try { localStorage.setItem(KEY + ':tab', ui.tab); } catch (err) {}
       render(); return;
     }
@@ -1172,6 +1298,11 @@ tr.nowrow td { background: var(--accent-soft); }
       case 'prev': ui.week = addDays(ui.week, -7); ui.confirm = null; break;
       case 'next': ui.week = addDays(ui.week, 7); ui.confirm = null; break;
       case 'thisweek': ui.week = mondayOf(new Date()); break;
+      case 'publish': publishNow(); return;
+      case 'discard':
+        try { localStorage.removeItem(KEY + ':draft'); } catch (err) {}
+        S = JSON.parse(JSON.stringify(EMB)); migrate(); sync.dirty = false; toast('Cambios descartados.'); break;
+      case 'vac-del': S.vacations = (S.vacations || []).filter(v => v.id !== id); save(); toast('Vacaciones quitadas.'); break;
       case 'goto-week': ui.week = parse(el.dataset.w); ui.tab = 'cuadrante'; window.scrollTo(0, 0); break;
       case 'year-prev': ui.year--; break;
       case 'year-next': ui.year++; break;
@@ -1235,6 +1366,7 @@ tr.nowrow td { background: var(--accent-soft); }
   });
 
   document.addEventListener('change', e => {
+    userAct();
     const el = e.target;
     const act = el.dataset.act;
     if (!act) return;
@@ -1251,7 +1383,8 @@ tr.nowrow td { background: var(--accent-soft); }
           c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
           const p = byId(el.dataset.id);
           p.photo = c.toDataURL('image/jpeg', 0.85);
-          save(); render(); toast('Foto puesta a ' + p.name.split(' ')[0] + '.');
+          ui.userEdit = true;
+          save(); ui.userEdit = false; render(); toast('Foto puesta a ' + p.name.split(' ')[0] + '.');
         };
         img.onerror = () => toast('No se ha podido leer la imagen. Prueba con un JPG o PNG.');
         img.src = reader.result;
@@ -1290,6 +1423,19 @@ tr.nowrow td { background: var(--accent-soft); }
 
   document.addEventListener('submit', e => {
     e.preventDefault();
+    userAct();
+    if (e.target.id === 'vac-form') {
+      const staffId = document.getElementById('vac-who').value;
+      let from = document.getElementById('vac-from').value, to = document.getElementById('vac-to').value;
+      if (!from || !to) { toast('Elige las fechas de inicio y fin.'); return; }
+      if (to < from) { const t = from; from = to; to = t; }
+      if ((S.vacations || []).some(v => v.staffId === staffId && v.from <= to && from <= v.to)) { toast('Se solapa con otras vacaciones de esa persona.'); return; }
+      S.vacations = (S.vacations || []).concat({ id: uid(), staffId, from, to });
+      save(); render();
+      const sm = vacSummary(staffId, Number(from.slice(0, 4)));
+      toast(byId(staffId).name.split(' ')[0] + ': ' + dayCount(from, to) + ' días añadidos.' + (sm.free < 0 ? ' Se pasa de ' + sm.total + ' días.' : ' Le quedan ' + sm.free + ' sin fecha.'));
+      return;
+    }
     if (e.target.id === 'hol-form') {
       const d = document.getElementById('hol-date').value;
       if (!d) { toast('Elige una fecha.'); return; }
@@ -1310,106 +1456,60 @@ tr.nowrow td { background: var(--accent-soft); }
     }
   });
 
-  // ---------- Cuadrante compartido (base de datos del artifact) ----------
-  // Dentro de claude.ai: un único cuadrante en la nube. Edita quien tiene permiso de edición
-  // (la propietaria); el resto solo consulta. Abierto como archivo suelto, funciona en local.
+  // ---------- Publicación para el equipo ----------
   function setSync(state, text) {
     const el = document.getElementById('sync');
     el.hidden = false; el.dataset.state = state; el.textContent = text;
   }
-  function parts() {
-    const out = {};
-    const staff = S.staff.map(p => { const c = Object.assign({}, p); delete c.photo; return c; });
-    out['farmacia/config'] = { version: S.version, settings: S.settings, staff, holidays: S.holidays || {}, weekPlan: S.weekPlan || {} };
-    Object.keys(S.schedule).forEach(k => { const y = 'cuadrante/' + k.slice(0, 4); (out[y] || (out[y] = { days: {} })).days[k] = S.schedule[k]; });
-    S.staff.forEach(p => { if (p.photo) out['fotos/' + p.id] = { src: p.photo }; });
-    return out;
+  function buildPage() {
+    const state = JSON.parse(JSON.stringify(S));
+    state.rev = new Date().toISOString();
+    const json = JSON.stringify(state).replace(/</g, '\\u003c');
+    const content = PAGE_SOURCE.replace(/<script type="application\/json" id="estado">[\s\S]*?<\/script>/, () => '<script type="application/json" id="estado">' + json + '</' + 'script>');
+    return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>' + PAGE_RESET + '</style></head><body>' + content + '</body></html>';
   }
-  function scheduleFlush() {
-    if (!sync.db || !sync.canEdit || !sync.ready) return;
-    clearTimeout(sync.timer);
-    sync.timer = setTimeout(flush, 600);
-  }
-  function flush() {
-    const now = parts();
-    const paths = new Set(Object.keys(now).concat(Object.keys(sync.sent)));
-    let pending = 0;
-    paths.forEach(path => {
-      const body = now[path];
-      const json = body ? JSON.stringify(body) : null;
-      if (json === (sync.sent[path] === undefined ? null : sync.sent[path])) return;
-      sync.sent[path] = json;
-      pending++;
-      sync.queue = sync.queue
-        .then(() => body ? sync.db.doc(path).set(body) : sync.db.doc(path).delete())
-        .catch(e => { sync.sent[path] = undefined; setSync('error', e && e.code === 'quota_exceeded' ? 'Sin espacio para guardar' : 'No se ha podido guardar: revisa la conexión'); });
-    });
-    if (pending) {
-      setSync('saving', 'Guardando…');
-      sync.queue = sync.queue.then(() => { if (document.getElementById('sync').dataset.state === 'saving') setSync('ok', 'Compartido · guardado para todo el equipo'); });
+  async function publishNow() {
+    if (!sync.artifact || !PAGE_SOURCE || sync.publishing) { toast('No se puede publicar desde aquí.'); return; }
+    sync.publishing = true; render(); setSync('saving', 'Publicando…');
+    try { sessionStorage.setItem(KEY + ':week', ymd(ui.week)); } catch (e) {}
+    try {
+      await sync.artifact.publish(buildPage());
+      try { localStorage.removeItem(KEY + ':draft'); } catch (e) {}
+      sync.dirty = false;
+      setSync('ok', 'Publicado · el equipo ya lo ve');
+      toast('Publicado. El equipo verá los cambios al abrir o recargar la app.');
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'conflict') toast('Había una versión más nueva: se recarga. Tus cambios siguen guardados como borrador.');
+      else if (code === 'not_writer' || code === 'not_granted' || code === 'capability_disabled' || code === 'consent_required') { sync.canEdit = false; toast('Desde aquí no se puede publicar: esta vista es solo de consulta.'); }
+      else if (code === 'too_large') toast('El cuadrante ocupa demasiado para publicarse. Quita alguna foto y prueba otra vez.');
+      else if (code === 'rate_limited') toast('Demasiadas publicaciones seguidas. Espera un minuto y vuelve a publicar.');
+      else toast('No se ha podido publicar. Prueba de nuevo en un momento.');
+      setSync(sync.canEdit ? 'error' : 'ro', sync.canEdit ? 'Sin publicar' : 'Solo consulta');
     }
-  }
-  function applyRemote() {
-    if (remote.config === undefined || !remote.years || !remote.fotos) return;   // aún falta algo
-    const first = !sync.ready;
-    sync.ready = true;
-    if (!sync.canEdit) setSync('ro', 'Solo consulta');
-    else if (first) setSync('ok', 'Compartido · guardado para todo el equipo');
-    if (!remote.config) {
-      // Base de datos vacía: la propietaria publica su cuadrante; el resto ve el de serie.
-      if (sync.canEdit) { sync.sent = {}; flush(); }
-      else setSync('ro', 'Solo consulta');
-      if (first) render();
-      return;
-    }
-    const c = remote.config;
-    const schedule = {};
-    Object.keys(remote.years).sort().forEach(y => Object.assign(schedule, remote.years[y].days || {}));
-    const staff = (c.staff || []).map(p => Object.assign({}, p, remote.fotos[p.id] ? { photo: remote.fotos[p.id] } : {}));
-    const next = JSON.parse(JSON.stringify({ version: c.version, settings: c.settings, staff, schedule, holidays: c.holidays || {}, weekPlan: c.weekPlan || {} }));
-    if (!first && JSON.stringify(next) === JSON.stringify(S)) return;
-    S = next;
-    sync.sent = {};
-    Object.entries(parts()).forEach(([k, v]) => { sync.sent[k] = JSON.stringify(v); });
-    migrate();
-    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
-    if (sync.canEdit) flush();
-    if (!ui.editing) render();
+    sync.publishing = false; render();
   }
   async function startSync() {
-    if (!SYNC_ON) return;
-    render();   // modo consulta mientras se comprueba el permiso
-    let db = null, user = null;
-    try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch (e) {}
-    try { sync.canEdit = user ? await user.canEdit() : false; } catch (e) { sync.canEdit = false; }
-    if (!db) {
-      sync.canEdit = false;
-      setSync('ro', 'Solo consulta · cuadrante de serie');
-      render();
-      return;
-    }
-    sync.db = db;
-    setSync(sync.canEdit ? 'saving' : 'ro', 'Cargando cuadrante compartido…');
-    const slow = setTimeout(() => { if (!sync.ready) setSync('error', 'Sin conexión: se muestra la última copia de este dispositivo'); }, 10000);
-    const fail = () => { clearTimeout(slow); setSync('error', 'No se puede cargar el cuadrante compartido'); };
-    db.doc('farmacia/config').onSnapshot(snap => {
-      remote.config = snap.exists ? snap.data() : null;
-      if (!snap.metadata.fromCache) clearTimeout(slow);
-      if (!sync.ready || !snap.metadata.hasPendingWrites) applyRemote();
-      if (sync.ready && !sync.canEdit) setSync('ro', 'Solo consulta');
-      else if (sync.ready && document.getElementById('sync').dataset.state !== 'saving') setSync('ok', 'Compartido · guardado para todo el equipo');
-    }, fail);
-    db.collection('cuadrante').onSnapshot(snap => {
-      remote.years = {}; snap.docs.forEach(d => { remote.years[d.id] = d.data(); });
-      if (!sync.ready || !snap.metadata.hasPendingWrites) applyRemote();
-    }, fail);
-    db.collection('fotos').onSnapshot(snap => {
-      remote.fotos = {}; snap.docs.forEach(d => { remote.fotos[d.id] = d.data().src; });
-      if (!sync.ready || !snap.metadata.hasPendingWrites) applyRemote();
-    }, fail);
+    render();   // primero, modo consulta
+    let artifact = null, user = null;
+    try { [artifact, user] = await Promise.all([window.claude.use('artifact'), window.claude.use('user')]); } catch (e) {}
+    let canEdit = false;
+    try { canEdit = !!(artifact && user && await user.canEdit()); } catch (e) { canEdit = false; }
+    sync.artifact = artifact;
+    sync.canEdit = canEdit && !!PAGE_SOURCE;
+    if (!sync.canEdit) { setSync('ro', 'Solo consulta'); render(); return; }
+    // Recuperar un borrador sin publicar hecho sobre esta misma versión.
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY + ':draft'));
+      if (d && d.S && d.baseRev === (EMB && EMB.rev || null)) { S = d.S; migrate(); sync.dirty = true; }
+      else localStorage.removeItem(KEY + ':draft');
+    } catch (e) {}
+    setSync('ok', sync.dirty ? 'Editando · cambios sin publicar' : 'Puedes editar · el equipo solo consulta');
+    render();
   }
 
   if (SYNC_ON) startSync(); else render();
+  window.addEventListener('beforeunload', e => { if (sync.dirty && !sync.publishing) { e.preventDefault(); e.returnValue = ''; } });
   setInterval(renderNow, 60000);
 })();
 </script>

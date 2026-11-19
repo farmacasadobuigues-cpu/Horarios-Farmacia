@@ -2,7 +2,7 @@
 
 Aplicación web para organizar los turnos del equipo de una farmacia comunitaria y las guardias.
 
-Publicada en claude.ai como app compartida: el cuadrante se guarda en la nube, la propietaria lo edita y el equipo solo lo consulta (también desde el móvil, añadiéndolo a la pantalla de inicio). Abierto como archivo suelto (`index.html`), funciona en local y guarda los datos en el navegador.
+Publicada en claude.ai con enlace público: el cuadrante va dentro de la propia página, así que el equipo la abre sin cuenta (también desde el móvil, añadiéndola a la pantalla de inicio) y solo puede consultarla. La propietaria edita y pulsa «Publicar para el equipo». Abierto como archivo suelto (`index.html`), funciona en local y guarda los datos en el navegador.
 
 ## Imagen
 
@@ -14,6 +14,7 @@ Colores y tipografía (Titillium Web) del manual de identidad de la farmacia, co
 - **Sábados**: de 09:00 a 14:00 con 2 personas. Rotan todas por igual (2 sábados de cada 5) y siempre entra al menos una persona que pueda llevar el sábado (Ramiro, Lucía o Anastasia), de modo que Aizane y Lorena no coinciden solas.
 - **Año**: vista de todas las semanas del año con quién hace mañana, tarde y sábado, y el total de horas por persona. El año 2027 sigue el Excel «HORARIO 2027 turnos v2»: Ramiro y Luci alternan por semanas (Ramiro empieza de tarde el 4 de enero, siguiendo la rutina de 2026), Lorena y Aizane de mañana y Anastasia de tarde.
 - **Festivos**: nacionales, autonómicos de la Comunitat Valenciana (San José, Lunes de Pascua y 9 de octubre) y locales (5 de agosto y 22 de octubre); la farmacia cierra y no se mueven los turnos: si un sábado es festivo, quienes tenían ese sábado libran. Se editan en Ajustes.
+- **Vacaciones**: 30 días naturales por persona y año; muestra los disfrutados, los que tienen fecha y los pendientes. En el cuadrante, la persona sale «De vacaciones» y el turno avisa de que falta alguien.
 - **Ahora**: quién está trabajando en este momento y qué hace.
 - **Equipo**: dar de alta y de baja con roles (titular, farmacéutico adjunto, auxiliar, estudiante en prácticas). No permite dar de baja al último farmacéutico adjunto. Al dar de baja a alguien se reasignan sus turnos pendientes.
 - **Ajustes**: hora de apertura, días que abre la farmacia y copia de seguridad.
