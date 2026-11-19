@@ -19,9 +19,9 @@ Los estudiantes en prácticas van como refuerzo tutorizado y no cuentan para las
 | Nombre | Rol | Turno |
 |---|---|---|
 | Ramiro González | Farmacéutico adjunto | Mañana |
-| Lucía Rojo | Farmacéutica adjunta | Tarde |
+| Lucía Rojo | Técnico en farmacia | Tarde |
 | Anastasia | Auxiliar | Mañana |
 | Aizane | Auxiliar | Mañana |
 | Lorena | Auxiliar | Tarde |
 
-Con cinco personas falta una por la tarde para llegar a 3 + 3; la aplicación lo avisa hasta que se dé de alta a alguien más.
+Hasta la temporada alta se trabaja con 3 personas de mañana y 2 de tarde (se cambia en Ajustes).

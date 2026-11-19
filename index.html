@@ -31,6 +31,7 @@
   --r-tit: #7a50c2;   --r-tit-soft: #efe8fb;
   --r-adj: #0b7f86;   --r-adj-soft: #d6eeee;
   --r-aux: #2e6db3;   --r-aux-soft: #e1ecf8;
+  --r-tec: #b0466d;   --r-tec-soft: #fbe4ec;
   --r-est: #b06908;   --r-est-soft: #fbecd4;
   --sh-m: #f1faf9;
   --sh-t: #eff4fb;
@@ -50,7 +51,7 @@
     --accent: #3cc5c0; --accent-strong: #74dbd6; --accent-fg: #04201f; --accent-soft: #123739;
     --hero-a: #05313a; --hero-b: #0a5c5e; --av-fg: #061a1b;
     --r-tit: #bda4ef; --r-tit-soft: #2b2346; --r-adj: #3cc5c0; --r-adj-soft: #123739;
-    --r-aux: #8db8ef; --r-aux-soft: #182b44; --r-est: #e9ad57; --r-est-soft: #3a2a12;
+    --r-aux: #8db8ef; --r-aux-soft: #182b44; --r-tec: #f09ab8; --r-tec-soft: #43202d; --r-est: #e9ad57; --r-est-soft: #3a2a12;
     --sh-m: #112a2b; --sh-t: #122437;
     --ok: #5fd39a; --ok-soft: #143826; --warn: #e9ad57; --warn-soft: #3a2a12; --err: #f28b82; --err-soft: #43201d;
     --guard: #a3b8f5; --guard-soft: #1d2846;
@@ -63,7 +64,7 @@
   --accent: #3cc5c0; --accent-strong: #74dbd6; --accent-fg: #04201f; --accent-soft: #123739;
   --hero-a: #05313a; --hero-b: #0a5c5e; --av-fg: #061a1b;
   --r-tit: #bda4ef; --r-tit-soft: #2b2346; --r-adj: #3cc5c0; --r-adj-soft: #123739;
-  --r-aux: #8db8ef; --r-aux-soft: #182b44; --r-est: #e9ad57; --r-est-soft: #3a2a12;
+  --r-aux: #8db8ef; --r-aux-soft: #182b44; --r-tec: #f09ab8; --r-tec-soft: #43202d; --r-est: #e9ad57; --r-est-soft: #3a2a12;
   --sh-m: #112a2b; --sh-t: #122437;
   --ok: #5fd39a; --ok-soft: #143826; --warn: #e9ad57; --warn-soft: #3a2a12; --err: #f28b82; --err-soft: #43201d;
   --guard: #a3b8f5; --guard-soft: #1d2846;
@@ -124,6 +125,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .role-titular { --c: var(--r-tit); --cs: var(--r-tit-soft); }
 .role-adjunto { --c: var(--r-adj); --cs: var(--r-adj-soft); }
 .role-auxiliar { --c: var(--r-aux); --cs: var(--r-aux-soft); }
+.role-tecnico { --c: var(--r-tec); --cs: var(--r-tec-soft); }
 .role-estudiante { --c: var(--r-est); --cs: var(--r-est-soft); }
 .av { width: 28px; height: 28px; border-radius: 50%; background: var(--c); color: var(--av-fg); display: inline-grid; place-items: center; font: 700 0.72rem/1 var(--f-display); flex: none; letter-spacing: 0.02em; }
 .who .av { box-shadow: 0 0 0 2px var(--on-hero); }
@@ -269,7 +271,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   const ROLES = {
     titular:    { label: 'Farmacéutica/o titular',   short: 'Titular',   abbr: 'TIT', pharm: true,  order: 1 },
     adjunto:    { label: 'Farmacéutica/o adjunta/o', short: 'Adjunto',   abbr: 'ADJ', pharm: true,  order: 0 },
-    auxiliar:   { label: 'Auxiliar / técnico',       short: 'Auxiliar',  abbr: 'AUX', pharm: false, order: 2 },
+    tecnico:    { label: 'Técnico en farmacia',      short: 'Técnico',   abbr: 'TÉC', pharm: false, order: 2 },
+    auxiliar:   { label: 'Auxiliar de farmacia',     short: 'Auxiliar',  abbr: 'AUX', pharm: false, order: 2 },
     estudiante: { label: 'Estudiante en prácticas',  short: 'Prácticas', abbr: 'PRÁ', pharm: false, order: 3 }
   };
   const RESP = {
@@ -284,7 +287,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   const PREF_LABEL = { M: 'Mañana', T: 'Tarde', X: 'Rotativo (alterna cada semana)' };
   const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  const PER_SHIFT = 3;
+  const need = sh => (S.settings.min && S.settings.min[sh]) || 3;
 
   // ---------- Utilidades de fecha ----------
   const pad = n => String(n).padStart(2, '0');
@@ -305,23 +308,35 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const since = ymd(addDays(today, -400));
     const staff = [
       { id: 's2', name: 'Ramiro González', role: 'adjunto',  shift: 'M' },
-      { id: 's3', name: 'Lucía Rojo',      role: 'adjunto',  shift: 'T' },
+      { id: 's3', name: 'Lucía Rojo',      role: 'tecnico',  shift: 'T' },
       { id: 's4', name: 'Anastasia',       role: 'auxiliar', shift: 'M' },
       { id: 's5', name: 'Aizane',          role: 'auxiliar', shift: 'M' },
       { id: 's6', name: 'Lorena',          role: 'auxiliar', shift: 'T' }
     ].map(p => Object.assign(p, { active: true, since: since, until: null }));
-    const rota = ['s2', 's3'];
+    const rota = ['s2'];
     const guards = [];
     for (let i = 0; i < 5; i++) {
       const d = addDays(today, 2 + i * 6);
-      guards.push({ id: uid(), date: ymd(d), staffId: rota[i % 2], type: d.getDay() === 0 ? '24h' : 'noche' });
+      guards.push({ id: uid(), date: ymd(d), staffId: rota[i % rota.length], type: d.getDay() === 0 ? '24h' : 'noche' });
     }
-    return { settings: { open: '09:00', days: [1, 2, 3, 4, 5, 6] }, staff, schedule: {}, guards };
+    return { version: 3, settings: { open: '09:00', days: [1, 2, 3, 4, 5, 6], min: { M: 3, T: 2 } }, staff, schedule: {}, guards };
   }
 
   let S = null;
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
   if (!S || !Array.isArray(S.staff)) S = seed();
+  if (!S.version || S.version < 3) {
+    // Lucía Rojo pasa a técnico; las tardes se cubren con 2 personas hasta la temporada alta.
+    const lucia = S.staff.find(p => p.name === 'Lucía Rojo' && p.role === 'adjunto');
+    if (lucia) {
+      lucia.role = 'tecnico';
+      const ramiro = S.staff.find(p => p.active && p.role === 'adjunto');
+      S.guards.forEach(g => { if (g.staffId === lucia.id) g.staffId = ramiro ? ramiro.id : null; });
+      Object.keys(S.schedule).forEach(k => { S.schedule[k].T && S.schedule[k].T.forEach(a => { if (a.id === lucia.id && a.resp === 'gestion') a.resp = 'mostrador'; }); });
+    }
+    S.settings.min = S.settings.min || { M: 3, T: 2 };
+    S.version = 3;
+  }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
 
   const ui = { tab: 'cuadrante', week: mondayOf(new Date()), confirm: null, editing: null };
@@ -389,9 +404,10 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
         };
         const pick = pool => pool.slice().sort((a, b) => score(a) - score(b) || ROLES[a.role].order - ROLES[b.role].order)[0];
         const list = [];
-        const ph = pick(act.filter(isPharm));
+        // Un farmacéutico por turno; no se le hace doblar turno automáticamente.
+        const ph = pick(act.filter(p => isPharm(p) && !used.has(p.id)));
         if (ph) list.push(ph);
-        while (list.length < PER_SHIFT) {
+        while (list.length < need(sh)) {
           const c = pick(act.filter(p => p.role !== 'estudiante' && !list.includes(p) && !used.has(p.id)));
           if (!c) break;
           list.push(c);
@@ -422,8 +438,9 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const valid = people.filter(p => activeOn(p, key));
     const count = valid.filter(p => p.role !== 'estudiante').length;
     if (!valid.some(isPharm)) out.push({ lvl: 'err', t: 'Sin farmacéutico' });
-    if (count < PER_SHIFT) out.push({ lvl: 'err', t: 'Falta' + (PER_SHIFT - count > 1 ? 'n ' : ' ') + (PER_SHIFT - count) + (PER_SHIFT - count > 1 ? ' personas' : ' persona') });
-    if (count > PER_SHIFT) out.push({ lvl: 'info', t: 'Refuerzo: ' + count + ' personas' });
+    const n = need(sh);
+    if (count < n) out.push({ lvl: 'err', t: 'Falta' + (n - count > 1 ? 'n ' : ' ') + (n - count) + (n - count > 1 ? ' personas' : ' persona') });
+    if (count > n) out.push({ lvl: 'info', t: 'Refuerzo: ' + count + ' personas' });
     if (valid.length && !list.some(a => a.resp === 'mostrador' && byId(a.id) && activeOn(byId(a.id), key))) out.push({ lvl: 'warn', t: 'Nadie en mostrador' });
     people.filter(p => !activeOn(p, key)).forEach(p => out.push({ lvl: 'err', t: shortName(p) + ' está de baja' }));
     const other = (day && day[sh === 'M' ? 'T' : 'M']) || [];
@@ -476,7 +493,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       '<div><div class="label"><span class="live"></span>' + label + '</div><div class="state">' + state + '</div></div>' +
       '<div class="people">' + people + '</div>';
     document.getElementById('subtitle').textContent =
-      'Abierto ' + hm(times('M')[0]) + '–' + hm(times('T')[1]) + ' · 12 h · ' + PER_SHIFT + ' personas por turno, siempre con farmacéutico';
+      'Abierto ' + hm(times('M')[0]) + '–' + hm(times('T')[1]) + ' · 12 h · ' + need('M') + ' personas de mañana y ' + need('T') + ' de tarde, siempre con farmacéutico';
   }
   function guardPerson(g) {
     const p = byId(g.staffId);
@@ -544,7 +561,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
         const iss = shiftIssues(key, sh);
         const ok = !iss.some(x => x.lvl === 'err');
         html += '<section class="shift sh-' + sh + '"><div class="shift-h"><span><strong>' + SH_LABEL[sh] + '</strong><span class="mono">' + range(sh) + '</span></span>' +
-          '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + PER_SHIFT + '</span></div><ul>';
+          '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + need(sh) + '</span></div><ul>';
         list.forEach(a => {
           const p = byId(a.id); if (!p) return;
           html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(p.name.trim().split(/\s+/)[0]) + '</span><span class="r">' + ROLES[p.role].short + '</span></span>' +
@@ -569,9 +586,9 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
 
   function shortBanner() {
     const team = activeStaff().filter(p => p.role !== 'estudiante').length;
-    if (team >= PER_SHIFT * 2) return '';
-    const miss = PER_SHIFT * 2 - team;
-    return '<div class="banner warn"><span>Con ' + team + ' personas no se cubren ' + PER_SHIFT + ' por la mañana y ' + PER_SHIFT + ' por la tarde sin doblar turno: ' +
+    if (team >= need('M') + need('T')) return '';
+    const miss = need('M') + need('T') - team;
+    return '<div class="banner warn"><span>Con ' + team + ' personas no se cubren ' + need('M') + ' por la mañana y ' + need('T') + ' por la tarde sin doblar turno: ' +
       (miss > 1 ? 'faltan ' + miss + ' personas' : 'falta 1 persona') + ' cada día. Da de alta a alguien o añádelo a mano en el turno.</span>' +
       '<button class="btn sm" data-tab="equipo">Ir a Equipo</button></div>';
   }
@@ -610,7 +627,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     return [
       { ok: adj >= 1, t: 'Farmacéuticos adjuntos en plantilla: <strong>' + adj + '</strong> (mínimo 1)' },
       { ok: ph >= 2, t: 'Farmacéuticos para cubrir mañana y tarde: <strong>' + ph + '</strong> (mínimo 2 sin doblar turno)' },
-      { ok: team >= PER_SHIFT * 2, t: 'Personas para ' + PER_SHIFT + ' + ' + PER_SHIFT + ' sin doblar turno: <strong>' + team + '</strong> (mínimo ' + PER_SHIFT * 2 + ')' },
+      { ok: team >= need('M') + need('T'), t: 'Personas para ' + need('M') + ' de mañana + ' + need('T') + ' de tarde: <strong>' + team + '</strong> (mínimo ' + (need('M') + need('T')) + ')' },
       { ok: prefM >= 1 && prefT >= 1, t: 'Un farmacéutico con turno fijo de mañana y otro de tarde: <strong>' + (prefM >= 1 ? 'mañana ✓' : 'falta mañana') + ' · ' + (prefT >= 1 ? 'tarde ✓' : 'falta tarde') + '</strong>' }
     ];
   }
@@ -659,7 +676,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
             '<div class="field"><label for="alta-shift">Turno habitual</label><select id="alta-shift">' + prefOpts('M') + '</select></div>' +
             '<button class="btn primary" type="submit">Dar de alta</button>' +
           '</form>' +
-          '<p class="note">Los estudiantes en prácticas van como refuerzo tutorizado: no cuentan para las ' + PER_SHIFT + ' personas mínimas del turno.</p>' +
+          '<p class="note">Los estudiantes en prácticas van como refuerzo tutorizado: no cuentan para el mínimo de personas del turno.</p>' +
         '</section>' +
         '<section class="panel"><div class="panel-h"><h2>Equipo en activo</h2><span class="muted" style="font-size:.85rem">' + act.length + ' personas · horas de esta semana</span></div>' +
           '<div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Turno habitual</th><th>Alta</th><th class="num">Horas</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
@@ -738,6 +755,11 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           '<div class="field" style="max-width:260px"><label for="set-open">Hora de apertura (12 h seguidas)</label><select id="set-open" data-act="set-open">' +
             openOpts.map(o => '<option' + (o === S.settings.open ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></div>' +
           '<p class="note">Mañana <span class="mono">' + range('M') + '</span> · Tarde <span class="mono">' + range('T') + '</span> · Guardia nocturna <span class="mono">' + hm(times('T')[1]) + '–' + hm(times('M')[0]) + '</span></p>' +
+          '<div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">' +
+            SHIFTS.map(sh => '<div class="field"><label for="set-min-' + sh + '">Personas de ' + SH_LABEL[sh].toLowerCase() + '</label><select id="set-min-' + sh + '" data-act="set-min" data-sh="' + sh + '">' +
+              [1, 2, 3, 4, 5].map(n => '<option' + (n === need(sh) ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div>').join('') +
+          '</div>' +
+          '<p class="note">Cuando contratéis a la sexta persona para la temporada alta, sube la tarde a 3 y pulsa «Generar cuadrante».</p>' +
           '<div class="field"><label>Días de apertura</label><div class="daychecks">' +
             order.map(d => '<label><input type="checkbox" data-act="set-day" value="' + d + '"' + (S.settings.days.includes(d) ? ' checked' : '') + '> ' + DAYS[d] + '</label>').join('') +
           '</div></div>' +
@@ -749,7 +771,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           '<div class="actions"><button class="btn" data-act="copy">Copiar datos</button><button class="btn" data-act="import">Cargar datos pegados</button></div>' +
         '</section>' +
       '</div>' +
-      '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo inicial: Ramiro y Lucía (adjuntos) y Anastasia, Aizane y Lorena (auxiliares).</p><div class="actions">' + reset + '</div></section>' +
+      '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo inicial: Ramiro (adjunto), Lucía (técnico) y Anastasia, Aizane y Lorena (auxiliares).</p><div class="actions">' + reset + '</div></section>' +
     '</div>';
   }
 
@@ -885,6 +907,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       S.guards.find(g => g.id === el.dataset.id).staffId = el.value || null;
     } else if (act === 'g-type') {
       S.guards.find(g => g.id === el.dataset.id).type = el.value;
+    } else if (act === 'set-min') {
+      S.settings.min = Object.assign({ M: 3, T: 3 }, S.settings.min, { [el.dataset.sh]: Number(el.value) });
     } else if (act === 'set-open') {
       S.settings.open = el.value;
     } else if (act === 'set-day') {
