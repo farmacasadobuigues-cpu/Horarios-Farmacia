@@ -311,7 +311,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       { id: 's5', name: 'Aizane',          role: 'auxiliar', shift: 'M' },
       { id: 's6', name: 'Lorena',          role: 'auxiliar', shift: 'T' }
     ].map(p => Object.assign(p, { active: true, since: since, until: null }));
-    return { version: 6, settings: { open: '09:00', days: [1, 2, 3, 4, 5, 6], min: { M: 3, T: 2 }, sat: { close: '14:00', min: 2 } }, staff, schedule: {} };
+    return { version: 7, settings: { open: '09:00', mStart: '08:30', days: [1, 2, 3, 4, 5, 6], min: { M: 3, T: 2 }, sat: { close: '14:00', min: 2 } }, staff, schedule: {} };
   }
 
   let S = null;
@@ -355,6 +355,11 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     Object.keys(S.schedule).forEach(k => { if (k >= t) delete S.schedule[k]; });
     S.version = 6;
   }
+  if (S.version < 7) {
+    // El turno de mañana entra a las 8:30 de lunes a viernes.
+    S.settings.mStart = '08:30';
+    S.version = 7;
+  }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
 
   const ui = { tab: 'cuadrante', week: mondayOf(new Date()), confirm: null, editing: null };
@@ -368,7 +373,9 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   const firstName = id => { const p = byId(id); return p ? p.name.split(' ')[0] : '—'; };
   const shortName = p => { const parts = p.name.trim().split(/\s+/); return parts.length > 1 ? parts[0] + ' ' + parts[1][0] + '.' : parts[0]; };
   const openMin = () => { const [h, m] = S.settings.open.split(':').map(Number); return h * 60 + m; };
-  const times = sh => { const o = openMin(); return sh === 'M' ? [o, o + 360] : [o + 360, o + 720]; };
+  const mStartMin = () => { const [h, m] = (S.settings.mStart || S.settings.open).split(':').map(Number); return h * 60 + m; };
+  const times = sh => { const o = openMin(); return sh === 'M' ? [Math.min(mStartMin(), o), o + 360] : [o + 360, o + 720]; };
+  const fmtH = h => String(Math.round(h * 10) / 10).replace('.', ',') + ' h';
   const hm = m => pad(Math.floor((m % 1440) / 60)) + ':' + pad(m % 60);
   const range = sh => hm(times(sh)[0]) + '–' + hm(times(sh)[1]);
   const isOpenDay = d => S.settings.days.includes(d.getDay());
@@ -656,12 +663,12 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     }
     const people = S.staff.filter(p => p.active || rows[p.id])
       .sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
-    return '<section class="panel"><div class="panel-h"><h2>Resumen de la semana</h2><span class="muted" style="font-size:.85rem">Mañana y tarde: 6 h · sábado: ' + (toMin(S.settings.sat ? S.settings.sat.close : '15:00') - openMin()) / 60 + ' h</span></div>' +
+    return '<section class="panel"><div class="panel-h"><h2>Resumen de la semana</h2><span class="muted" style="font-size:.85rem">Mañana: ' + fmtH((times('M')[1] - times('M')[0]) / 60) + ' · tarde: ' + fmtH((times('T')[1] - times('T')[0]) / 60) + (S.settings.sat ? ' · sábado: ' + fmtH((toMin(S.settings.sat.close) - openMin()) / 60) : '') + '</span></div>' +
       '<div class="tablewrap"><table><thead><tr><th>Persona</th><th>Rol</th><th class="num">Mañanas</th><th class="num">Tardes</th><th class="num">Sábados</th><th class="num">Horas</th><th class="num">Mostrador</th><th class="num">Admin.</th><th class="num">Gestión</th></tr></thead><tbody>' +
       people.map(p => {
         const r = rows[p.id] || { M: 0, T: 0, S: 0, h: 0, mostrador: 0, admin: 0, gestion: 0, practicas: 0 };
         return '<tr><td><span class="person">' + avatar(p) + esc(p.name) + (p.active ? '' : ' <span class="muted">(baja)</span>') + '</span></td><td>' + roleBadge(p) + '</td>' +
-          '<td class="num">' + r.M + '</td><td class="num">' + r.T + '</td><td class="num">' + r.S + '</td><td class="num"><strong>' + r.h + ' h</strong></td>' +
+          '<td class="num">' + r.M + '</td><td class="num">' + r.T + '</td><td class="num">' + r.S + '</td><td class="num"><strong>' + fmtH(r.h) + '</strong></td>' +
           '<td class="num">' + r.mostrador + '</td><td class="num">' + r.admin + '</td><td class="num">' + r.gestion + '</td></tr>';
       }).join('') + '</tbody></table></div></section>';
   }
@@ -704,7 +711,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       return '<tr><td><span class="person">' + avatar(p) + esc(p.name) + '</span></td>' +
         '<td>' + roleBadge(p) + (p.lead && !isPharm(p) ? ' <span class="badge lead">Responsable</span>' : '') + (p.senior && !isLead(p) ? ' <span class="badge lead">Lleva sábado</span>' : '') + '</td><td>' + prefLabel(p.shift) + '</td>' +
         '<td class="mono muted">' + shortDate(parse(p.since)) + ' ' + p.since.slice(0, 4) + '</td>' +
-        '<td class="num">' + hoursWeek(p.id) + ' h</td>' +
+        '<td class="num">' + fmtH(hoursWeek(p.id)) + '</td>' +
         '<td><div class="rowact">' + (confirming
           ? '<span class="muted" style="font-size:.85rem">¿Dar de baja?</span><button class="btn danger solid sm" data-act="baja-yes" data-id="' + p.id + '">Sí, dar de baja</button><button class="btn sm" data-act="cancel">No</button>'
           : '<button class="btn sm" data-act="edit" data-id="' + p.id + '">Editar</button>' + (p.role === 'titular' ? '' : '<button class="btn danger sm" data-act="baja" data-id="' + p.id + '">Dar de baja</button>')) +
@@ -751,8 +758,12 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     return '<div class="cols">' +
       '<div class="stack">' +
         '<section class="panel"><h2>Horario de apertura</h2>' +
-          '<div class="field" style="max-width:260px"><label for="set-open">Hora de apertura (12 h seguidas)</label><select id="set-open" data-act="set-open">' +
-            openOpts.map(o => '<option' + (o === S.settings.open ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></div>' +
+          '<div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">' +
+            '<div class="field"><label for="set-mstart">Entrada del turno de mañana</label><select id="set-mstart" data-act="set-mstart">' +
+              openOpts.map(o => '<option' + (o === (S.settings.mStart || S.settings.open) ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></div>' +
+            '<div class="field"><label for="set-open">Cambio de turno a las 6 h de</label><select id="set-open" data-act="set-open">' +
+              openOpts.map(o => '<option' + (o === S.settings.open ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></div>' +
+          '</div>' +
           '<p class="note">Mañana <span class="mono">' + range('M') + '</span> · Tarde <span class="mono">' + range('T') + '</span></p>' +
           '<div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">' +
             SHIFTS.map(sh => '<div class="field"><label for="set-min-' + sh + '">Personas de ' + SH_LABEL[sh].toLowerCase() + '</label><select id="set-min-' + sh + '" data-act="set-min" data-sh="' + sh + '">' +
@@ -913,6 +924,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       S.settings.sat.min = Number(el.value);
     } else if (act === 'set-min') {
       S.settings.min = Object.assign({ M: 3, T: 3 }, S.settings.min, { [el.dataset.sh]: Number(el.value) });
+    } else if (act === 'set-mstart') {
+      S.settings.mStart = el.value;
     } else if (act === 'set-open') {
       S.settings.open = el.value;
     } else if (act === 'set-day') {
