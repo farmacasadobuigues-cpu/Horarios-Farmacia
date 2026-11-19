@@ -96,18 +96,20 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .eyebrow { font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 600; color: var(--accent); }
 .brand p { margin: 2px 0 0; color: var(--on-brand-muted); font-size: 0.92rem; }
 .brand p.sync { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; padding: 1px 10px; border-radius: 4px; background: var(--brand-glass); border: 1px solid var(--brand-line); color: var(--on-brand); }
+.brand p.sync[hidden] { display: none; }
 .brand p.sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .brand p.sync[data-state="ro"]::before { background: var(--sage); }
 .brand p.sync[data-state="saving"]::before { background: #f2c14e; }
 .brand p.sync[data-state="error"]::before { background: #f28b82; }
 
-.tabs { display: flex; gap: 2px; background: var(--brand-glass); border: 1px solid var(--brand-line); padding: 3px; border-radius: 6px; }
+.tabs { display: flex; gap: 2px; max-width: 100%; overflow-x: auto; scrollbar-width: none; background: var(--brand-glass); border: 1px solid var(--brand-line); padding: 3px; border-radius: 6px; }
 .tabs button { border: 0; background: transparent; padding: 7px 18px; border-radius: 4px; cursor: pointer; font-weight: 600; color: var(--on-brand-muted); letter-spacing: 0.02em; }
 .tabs button:hover { color: var(--on-brand); }
 .tabs button[aria-selected="true"] { background: var(--on-brand); color: var(--brand); }
 :root[data-theme="dark"] .tabs button[aria-selected="true"] { background: var(--accent); color: #062126; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tabs button[aria-selected="true"] { background: var(--accent); color: #062126; } }
-@media (max-width: 560px) { .tabs { width: 100%; } .tabs button { flex: 1 1 auto; padding-inline: 6px; font-size: 0.92rem; } }
+.tabs button { white-space: nowrap; flex: none; }
+@media (max-width: 560px) { .tabs { width: 100%; } .tabs button { padding-inline: 10px; font-size: 0.92rem; } }
 
 /* Ahora */
 .now { background: var(--brand-glass); border: 1px solid var(--brand-line); border-radius: var(--radius); padding: 14px 18px; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 12px 24px; align-items: center; }
@@ -254,6 +256,54 @@ textarea { font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; min-
 table.year td { padding-block: 6px; }
 tr.nowrow td { background: var(--accent-soft); }
 .nowrap { white-space: nowrap; }
+.guardline { margin: 0 12px 10px; padding: 7px 12px; border-radius: 6px; background: var(--r-tit-soft); color: var(--r-tit); font-size: 0.88rem; display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.gpeople { display: flex; flex-wrap: wrap; gap: 6px; }
+.gchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--muted); }
+.gchip input { position: absolute; opacity: 0; pointer-events: none; }
+.gchip .av { width: 24px; height: 24px; box-shadow: none; filter: grayscale(1); opacity: .6; }
+.gchip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+.gchip.on .av { filter: none; opacity: 1; }
+.gchip:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+tr.past td { opacity: 0.6; }
+.vclash { flex-direction: column; align-items: stretch; }
+/* Mi horario */
+.mipeople { display: flex; flex-wrap: wrap; gap: 12px; }
+.mibtn { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); cursor: pointer; font-weight: 700; font-size: 1rem; min-width: 104px; }
+.mibtn:hover { border-color: var(--accent); }
+.mibtn .av { width: 64px; height: 64px; }
+.mihero { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 16px 28px; align-items: center; }
+@media (max-width: 640px) { .mihero { grid-template-columns: 1fr; } }
+.mime { display: flex; align-items: center; gap: 14px; }
+.mime .av { width: 64px; height: 64px; }
+.mihello { font-size: 1.5rem; font-weight: 700; color: var(--brand); line-height: 1.1; }
+:root[data-theme="dark"] .mihello { color: var(--fg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mihello { color: var(--fg); } }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent-ink); font-weight: 600; cursor: pointer; text-decoration: underline; font-size: 0.9rem; }
+.milabel { font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.mistate { font-size: 1.7rem; font-weight: 700; line-height: 1.15; }
+.mistate span, .mishift span { font-weight: 400; color: var(--muted); font-size: 0.75em; white-space: nowrap; }
+.misub { font-size: 0.9rem; color: var(--muted); }
+.miguard { display: inline-block; margin-top: 4px; font-size: 0.82rem; font-weight: 700; color: var(--r-tit); background: var(--r-tit-soft); padding: 1px 8px; border-radius: 4px; }
+.k-M { --k: var(--brand); } .k-T { --k: var(--accent-ink); } .k-sat { --k: var(--r-tit); } .k-vac { --k: var(--warn); } .k-fest { --k: var(--warn); } .k-free, .k-off { --k: var(--muted); }
+.mistate { color: var(--k, var(--fg)); }
+.milist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.miday { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0 9px 10px; border-bottom: 1px solid var(--line); border-left: 4px solid var(--k); }
+.miday:last-child { border-bottom: 0; }
+.miday.now { background: var(--accent-soft); }
+.miday.k-free, .miday.k-off { opacity: 0.6; }
+.midate { display: flex; flex-direction: column; line-height: 1.1; }
+.midate strong { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.85rem; }
+.midate span { font-size: 0.85rem; color: var(--muted); }
+.mishift { font-weight: 700; color: var(--k); }
+.mimates { display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: flex-end; }
+@media (max-width: 520px) { .miday { grid-template-columns: 56px minmax(0, 1fr); } .mimates { grid-column: 2; justify-content: flex-start; } }
+.mivacs { display: flex; flex-wrap: wrap; gap: 12px; }
+.mivac { display: grid; grid-template-columns: auto auto; column-gap: 8px; align-items: baseline; padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px; }
+.mivac .miyear { grid-column: 1 / -1; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); }
+.mivac strong { font-size: 1.9rem; line-height: 1; color: var(--brand); }
+:root[data-theme="dark"] .mivac strong { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mivac strong { color: var(--accent); } }
+.mivac small { grid-column: 1 / -1; color: var(--muted); }
 .yp.vac { opacity: 0.55; } .yp small { font-weight: 600; color: var(--warn); }
 .pp.vac { opacity: 0.6; border-style: dashed; } .pp.vac .r { color: var(--warn); }
 /* Vacaciones */
@@ -304,10 +354,12 @@ tr.nowrow td { background: var(--accent-soft); }
         </div>
       </div>
       <nav class="tabs" role="tablist" aria-label="Secciones">
+        <button role="tab" data-tab="mi" id="tab-mi">Mi horario</button>
         <button role="tab" data-tab="cuadrante" id="tab-cuadrante">Cuadrante</button>
         <button role="tab" data-tab="equipo" id="tab-equipo">Equipo</button>
         <button role="tab" data-tab="anual" id="tab-anual">Año</button>
         <button role="tab" data-tab="vacaciones" id="tab-vacaciones">Vacaciones</button>
+        <button role="tab" data-tab="guardias" id="tab-guardias">Guardias</button>
         <button role="tab" data-tab="ajustes" id="tab-ajustes">Ajustes</button>
       </nav>
     </div>
@@ -529,6 +581,11 @@ tr.nowrow td { background: var(--accent-soft); }
     S.settings.vacDays = S.settings.vacDays || 30;
     S.version = 15;
   }
+  if (S.version < 16) {
+    // Guardias: fechas y personas; se pagan aparte y no cuentan en las horas.
+    S.guards = S.guards || [];
+    S.version = 16;
+  }
   }
   migrate();
   function save() {
@@ -537,12 +594,14 @@ tr.nowrow td { background: var(--accent-soft); }
     if (sync.canEdit && ui.userEdit) {
       sync.dirty = true;
       try { localStorage.setItem(KEY + ':draft', JSON.stringify({ baseRev: EMB && EMB.rev || null, S })); } catch (e) {}
+      scheduleAutoPublish();
     }
   }
 
-  const ui = { tab: 'cuadrante', week: mondayOf(new Date()), year: 2027, confirm: null, editing: null, userEdit: false };
+  const ui = { tab: 'mi', me: null, vacPending: null, week: mondayOf(new Date()), year: 2027, confirm: null, editing: null, userEdit: false };
   try { const w = sessionStorage.getItem(KEY + ':week'); if (w) ui.week = parse(w); sessionStorage.removeItem(KEY + ':week'); } catch (e) {}
   try { const t = localStorage.getItem(KEY + ':tab'); if (t) ui.tab = t; } catch (e) {}
+  try { ui.me = localStorage.getItem(KEY + ':me'); } catch (e) {}
   if (openYearView) { ui.tab = 'anual'; save(); }
 
   // ---------- Helpers de dominio ----------
@@ -577,6 +636,11 @@ tr.nowrow td { background: var(--accent-soft); }
     ? 'Semanas alternas · esta semana de ' + (effPref({ shift: code }, mondayOf(new Date())) === 'M' ? 'mañana' : 'tarde')
     : code === 'T' ? 'Tarde' : 'Mañana';
   // Responsable de turno: un farmacéutico o una persona marcada como responsable.
+  // ---------- Guardias ----------
+  const guardsOn = key => (S.guards || []).filter(g => g.date === key);
+  const guardRange = g => g.type === '24h' ? '24 horas' : hm(times('T')[1]) + '–' + hm(times('M')[0]);
+  const guardLabel = g => g.type === '24h' ? 'Guardia 24 h' : 'Guardia nocturna';
+
   // ---------- Vacaciones ----------
   const onVac = (id, key) => (S.vacations || []).some(v => v.staffId === id && v.from <= key && key <= v.to);
   const dayCount = (a, b) => Math.round((parse(b) - parse(a)) / 864e5) + 1;
@@ -898,13 +962,15 @@ tr.nowrow td { background: var(--accent-soft); }
     for (let i = 0; i < 7; i++) {
       const d = addDays(monday, i), key = ymd(d);
       const isToday = key === todayKey();
+      const gHtml = guardsOn(key).map(g => '<div class="guardline"><strong>' + guardLabel(g) + '</strong><span>' +
+        ((g.people || []).map(id => byId(id)).filter(Boolean).map(p => esc(p.name.split(' ')[0])).join(', ') || 'Sin asignar') + ' · ' + guardRange(g) + '</span></div>').join('');
       const head = '<header><span><span class="dname">' + DAYS[d.getDay()] + '</span> <span class="ddate">' + shortDate(d) + '</span></span>' + (isToday ? '<span class="todaytag">Hoy</span>' : '') + '</header>';
       if (!isOpenDay(d) && !S.schedule[key]) {
-        html += '<article class="day closed' + (isToday ? ' today' : '') + '">' + head + '<div class="closedmsg">' + (holidayOf(d) ? '<span class="pill warn">Festivo</span> ' + esc(holidayOf(d)) +
+        html += '<article class="day closed' + (isToday ? ' today' : '') + '">' + head + gHtml + '<div class="closedmsg">' + (holidayOf(d) ? '<span class="pill warn">Festivo</span> ' + esc(holidayOf(d)) +
           (d.getDay() === 6 && S.settings.sat ? '<br>Libran: ' + satRotation(monday).map(p => esc(p.name.split(' ')[0])).join(' y ') : '') : 'Cerrado') + '</div></article>';
         continue;
       }
-      html += '<article class="day' + (isToday ? ' today' : '') + '">' + head;
+      html += '<article class="day' + (isToday ? ' today' : '') + '">' + head + gHtml;
       dayShifts(key).forEach(sh => {
         const list = (S.schedule[key] && S.schedule[key][sh]) || [];
         const iss = shiftIssues(key, sh);
@@ -1127,9 +1193,116 @@ tr.nowrow td { background: var(--accent-soft); }
     generateWeek(m);
   }
 
+  // ---------- Render: mi horario ----------
+  function myDay(id, key) {
+    const d = parse(key);
+    const hol = holidayOf(d);
+    const guards = guardsOn(key).filter(g => (g.people || []).includes(id));
+    if (hol) return { kind: 'fest', text: 'Festivo · ' + hol, guards };
+    if (onVac(id, key)) return { kind: 'vac', text: 'Vacaciones', guards };
+    const day = S.schedule[key];
+    if (!isOpenDay(d) || !day) return { kind: 'off', text: 'Cerrado', guards };
+    const sh = dayShifts(key).find(x => (day[x] || []).some(a => a.id === id));
+    if (!sh) return { kind: 'free', text: 'Libre', guards };
+    const me = day[sh].find(a => a.id === id);
+    const mates = day[sh].filter(a => a.id !== id && !onVac(a.id, key)).map(a => byId(a.id)).filter(Boolean);
+    return { kind: keySat(key) ? 'sat' : sh, sh, text: keySat(key) ? 'Sábado' : SH_LABEL[sh], range: shRange(key, sh), hours: shHours(key, sh), resp: RESP[me.resp], mates, guards };
+  }
+  function renderMi() {
+    const people = activeStaff().filter(p => p.role !== 'estudiante');
+    const p = ui.me && byId(ui.me) && byId(ui.me).active ? byId(ui.me) : null;
+    if (!p) {
+      return '<section class="panel mipick"><h2>¿Quién eres?</h2><p class="note">Elige tu nombre y verás directamente tu horario. Se recuerda en este móvil.</p>' +
+        '<div class="mipeople">' + people.map(x => '<button class="mibtn" data-act="me-pick" data-id="' + x.id + '">' + avatar(x) + '<span>' + esc(x.name.split(' ')[0]) + '</span></button>').join('') + '</div></section>';
+    }
+    const today = new Date();
+    // Asegura el cuadrante de las próximas semanas (se calcula igual para todos).
+    for (let w = 0; w < 27; w++) { const m = addDays(mondayOf(today), w * 7); if (!weekHasData(m)) generateWeek(m); }
+    const days = [];
+    for (let i = 0; i < 14; i++) { const d = addDays(today, i); days.push({ d, key: ymd(d), info: myDay(p.id, ymd(d)) }); }
+    const t = days[0].info;
+    const matesHtml = list => list.map(m => '<span class="yp">' + avatar(m) + esc(m.name.split(' ')[0]) + '</span>').join('');
+    const guardTxt = gs => gs.map(g => '<div class="miguard">' + guardLabel(g) + ' · ' + guardRange(g) + '</div>').join('');
+    const hero = '<section class="mihero">' +
+      '<div class="mime">' + avatar(p) + '<div><div class="mihello">Hola, ' + esc(p.name.split(' ')[0]) + '</div><button class="linkbtn" data-act="me-change">No soy yo</button></div></div>' +
+      '<div class="mitoday"><div class="milabel">Hoy · ' + DAYS[today.getDay()].toLowerCase() + ' ' + shortDate(today) + '</div>' +
+        '<div class="mistate k-' + t.kind + '">' + esc(t.text) + (t.range ? ' <span>' + t.range + '</span>' : '') + '</div>' +
+        (t.resp ? '<div class="misub">' + esc(t.resp) + (t.mates.length ? ' · con ' + t.mates.map(m => esc(m.name.split(' ')[0])).join(', ') : '') + '</div>' : '') + guardTxt(t.guards) +
+      '</div></section>';
+    // horas de esta semana y la siguiente
+    const weekHours = m => { let h = 0; for (let i = 0; i < 7; i++) { const k = ymd(addDays(m, i)); const x = myDay(p.id, k); if (x.hours) h += x.hours; } return h; };
+    const m0 = mondayOf(today), m1 = addDays(m0, 7);
+    const list = days.map(({ d, key, info }) => '<li class="miday k-' + info.kind + (key === todayKey() ? ' now' : '') + '">' +
+      '<div class="midate"><strong>' + DAYS[d.getDay()].slice(0, 3) + '</strong><span>' + d.getDate() + ' ' + MONTHS[d.getMonth()] + '</span></div>' +
+      '<div class="miwhat"><div class="mishift">' + esc(info.text) + (info.range ? ' <span>' + info.range + '</span>' : '') + '</div>' +
+        (info.resp ? '<div class="misub">' + esc(info.resp) + '</div>' : '') + guardTxt(info.guards) + '</div>' +
+      '<div class="mimates">' + (info.mates ? matesHtml(info.mates) : '') + '</div></li>').join('');
+    // próximos sábados
+    const sats = [];
+    for (let w = 0; w < 27 && sats.length < 4; w++) {
+      const k = ymd(addDays(mondayOf(today), w * 7 + 5));
+      if (k < todayKey()) continue;
+      const day = S.schedule[k];
+      if (day && (day.M || []).some(a => a.id === p.id) && !onVac(p.id, k)) sats.push(k);
+    }
+    const myGuards = (S.guards || []).filter(g => g.date >= todayKey() && (g.people || []).includes(p.id)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+    const y = today.getFullYear();
+    const vacBox = yy => { const sm = vacSummary(p.id, yy); return '<div class="mivac"><span class="miyear">' + yy + '</span><strong>' + sm.left + '</strong><span>días pendientes</span><small>' + sm.taken + ' disfrutados · ' + sm.planned + ' con fecha</small></div>'; };
+    const nextVac = (S.vacations || []).filter(v => v.staffId === p.id && v.to >= todayKey()).sort((a, b) => a.from.localeCompare(b.from)).slice(0, 3);
+    return '<div class="stack">' + hero +
+      '<div class="cols">' +
+        '<section class="panel"><div class="panel-h"><h2>Mis próximos 14 días</h2><span class="muted" style="font-size:.9rem">Esta semana ' + fmtH(weekHours(m0)) + ' · la que viene ' + fmtH(weekHours(m1)) + '</span></div><ul class="milist">' + list + '</ul></section>' +
+        '<div class="stack">' +
+          '<section class="panel"><h2>Mis sábados</h2>' + (sats.length ? '<div class="vlist">' + sats.map(k => '<span class="vchip">' + shortDate(parse(k)) + '</span>').join('') + '</div>' : '<p class="note">No tienes sábados en los próximos meses.</p>') + '</section>' +
+          '<section class="panel"><h2>Mis vacaciones</h2><div class="mivacs">' + vacBox(y) + (today.getMonth() >= 9 ? vacBox(y + 1) : '') + '</div>' +
+            (nextVac.length ? '<div class="vlist">' + nextVac.map(v => '<span class="vchip">' + shortDate(parse(v.from)) + ' – ' + shortDate(parse(v.to)) + ' · ' + dayCount(v.from, v.to) + ' d</span>').join('') + '</div>' : '<p class="note">Sin vacaciones con fecha. Pídelas por WhatsApp.</p>') + '</section>' +
+          '<section class="panel"><h2>Mis guardias</h2>' + (myGuards.length ? myGuards.map(g => '<div class="holrow"><strong>' + DAYS[parse(g.date).getDay()].slice(0, 3) + ' ' + shortDate(parse(g.date)) + '</strong><span>' + guardLabel(g) + ' · ' + guardRange(g) + '</span></div>').join('') : '<p class="note">No tienes guardias asignadas.</p>') + '</section>' +
+        '</div>' +
+      '</div></div>';
+  }
+
+  // ---------- Render: guardias ----------
+  function renderGuardias() {
+    const year = ui.year;
+    const people = activeStaff().filter(p => p.role !== 'estudiante').sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
+    const list = (S.guards || []).filter(g => g.date.slice(0, 4) === String(year)).sort((a, b) => a.date.localeCompare(b.date));
+    const rows = list.map(g => '<tr class="' + (g.date < todayKey() ? 'past' : '') + '"><td class="nowrap"><strong>' + DAYS[parse(g.date).getDay()].slice(0, 3) + ' ' + shortDate(parse(g.date)) + '</strong>' + (holidayOf(parse(g.date)) ? '<div class="hol">Festivo</div>' : '') + '</td>' +
+      '<td class="nowrap">' + guardLabel(g) + '<div class="muted" style="font-size:.85rem">' + guardRange(g) + '</div></td>' +
+      '<td><div class="gpeople">' + people.map(p => {
+        const on = (g.people || []).includes(p.id);
+        return sync.canEdit
+          ? '<label class="gchip' + (on ? ' on' : '') + '"><input type="checkbox" data-act="g-toggle" data-id="' + g.id + '" data-staff="' + p.id + '"' + (on ? ' checked' : '') + '>' + avatar(p) + esc(p.name.split(' ')[0]) + '</label>'
+          : (on ? '<span class="yp">' + avatar(p) + esc(p.name.split(' ')[0]) + '</span>' : '');
+      }).join('') + ((g.people || []).length || sync.canEdit ? '' : '<span class="muted">Sin asignar</span>') + '</div></td>' +
+      '<td><div class="rowact"><button class="iconbtn" data-act="g-del" data-id="' + g.id + '" aria-label="Eliminar guardia">×</button></div></td></tr>').join('');
+    const counts = people.map(p => ({ p, n: list.filter(g => (g.people || []).includes(p.id)).length }));
+    return '<div class="stack">' +
+      '<div class="weekbar"><div class="weeknav">' +
+        '<button class="btn round" data-act="year-prev" aria-label="Año anterior">‹</button>' +
+        '<span class="range">Guardias ' + year + '</span>' +
+        '<button class="btn round" data-act="year-next" aria-label="Año siguiente">›</button>' +
+        '<span class="pill ok">' + list.length + (list.length === 1 ? ' guardia' : ' guardias') + '</span>' +
+      '</div></div>' +
+      '<div class="cols">' +
+        '<section class="panel"><div class="panel-h"><h2>Calendario de guardias</h2><span class="muted" style="font-size:.9rem">Se pagan aparte: no cuentan en las horas</span></div>' +
+          (list.length ? '<div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Quién</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+            : '<p class="note">Todavía no hay guardias en ' + year + '. Cuando tengáis las fechas, se añaden aquí y se asigna quién las hace.</p>') +
+        '</section>' +
+        '<div class="stack">' +
+          '<section class="panel edit-only"><h2>Añadir guardia</h2><form class="grid" id="guard-form">' +
+            '<div class="field"><label for="g-date">Fecha</label><input type="date" id="g-date" required></div>' +
+            '<div class="field"><label for="g-type">Tipo</label><select id="g-type"><option value="noche">Nocturna (' + hm(times('T')[1]) + '–' + hm(times('M')[0]) + ')</option><option value="24h">24 horas</option></select></div>' +
+            '<button class="btn primary" type="submit">Añadir</button></form>' +
+            '<p class="note">Después marca en la lista quién hace cada guardia.</p></section>' +
+          '<section class="panel"><h2>Reparto ' + year + '</h2>' + counts.map(c => '<div class="holrow"><span class="person">' + avatar(c.p) + esc(c.p.name.split(' ')[0]) + '</span><strong>' + c.n + '</strong></div>').join('') + '</section>' +
+        '</div>' +
+      '</div></div>';
+  }
+
   // ---------- Render: vacaciones ----------
   function renderVacaciones() {
     const year = ui.year;
+    const vp = ui.vacPending;
     const people = activeStaff().filter(p => p.role !== 'estudiante').sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
     const fmtRange = v => v.from === v.to ? shortDate(parse(v.from)) : shortDate(parse(v.from)) + ' – ' + shortDate(parse(v.to));
     const cards = people.map(p => {
@@ -1144,7 +1317,7 @@ tr.nowrow td { background: var(--accent-soft); }
           '<span class="vt" style="width:' + pct(sm.taken) + '%"></span><span class="vp" style="width:' + pct(sm.planned) + '%"></span></div>' +
         '<div class="vnums"><span><i class="vt"></i>Disfrutados <strong>' + sm.taken + '</strong></span><span><i class="vp"></i>Con fecha <strong>' + sm.planned + '</strong></span><span><i class="vf"></i>Sin fecha <strong>' + Math.max(0, sm.free) + '</strong></span></div>' +
         (sm.free < 0 ? '<div class="issue warn">Se pasa ' + (-sm.free) + ' días de los ' + sm.total + '</div>' : '') +
-        '<div class="vlist">' + (periods.map(v => '<span class="vchip' + (v.to < todayKey() ? ' done' : '') + '">' + fmtRange(v) + ' · ' + clipDays(v, year + '-01-01', year + '-12-31') + ' d' +
+        '<div class="vlist">' + (periods.map(v => '<span class="vchip' + (v.to < todayKey() ? ' done' : '') + '"' + (v.approvedOverlap ? ' title="Aprobadas aunque coinciden con otra persona"' : '') + '>' + fmtRange(v) + ' · ' + clipDays(v, year + '-01-01', year + '-12-31') + ' d' + (v.approvedOverlap ? ' · solape aprobado' : '') +
           '<button class="iconbtn" data-act="vac-del" data-id="' + v.id + '" aria-label="Quitar estas vacaciones">×</button></span>').join('') || '<span class="muted">Sin vacaciones con fecha.</span>') + '</div>' +
       '</article>';
     }).join('');
@@ -1160,10 +1333,13 @@ tr.nowrow td { background: var(--accent-soft); }
         '<div class="vgrid">' + cards + '</div>' +
         '<div class="stack">' +
           '<section class="panel edit-only"><h2>Añadir vacaciones</h2>' +
-            '<form class="grid" id="vac-form"><div class="field"><label for="vac-who">Persona</label><select id="vac-who">' + people.map(p => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('') + '</select></div>' +
-            '<div class="field"><label for="vac-from">Desde</label><input type="date" id="vac-from" required></div>' +
-            '<div class="field"><label for="vac-to">Hasta (incluido)</label><input type="date" id="vac-to" required></div>' +
+            '<form class="grid" id="vac-form"><div class="field"><label for="vac-who">Persona</label><select id="vac-who">' + people.map(p => '<option value="' + p.id + '"' + (vp && vp.staffId === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') + '</select></div>' +
+            '<div class="field"><label for="vac-from">Desde</label><input type="date" id="vac-from" required value="' + (vp ? vp.from : '') + '"></div>' +
+            '<div class="field"><label for="vac-to">Hasta (incluido)</label><input type="date" id="vac-to" required value="' + (vp ? vp.to : '') + '"></div>' +
             '<button class="btn primary" type="submit">Añadir</button></form>' +
+            (vp ? '<div class="banner warn vclash"><span><strong>Coincide con otras vacaciones:</strong> ' +
+              vp.clash.map(cid => (S.vacations || []).find(v => v.id === cid)).filter(Boolean).map(v => esc(byId(v.staffId).name.split(' ')[0]) + ' (' + fmtRange(v) + ')').join(', ') +
+              '. No puede haber dos personas de vacaciones a la vez salvo que lo apruebes.</span><span class="actions"><button class="btn sm" data-act="vac-cancel">Cancelar</button><button class="btn sm primary" data-act="vac-force">Aprobar igualmente</button></span></div>' : '') +
             '<p class="note">Cuentan todos los días naturales, también sábados, domingos y festivos. En el cuadrante, esos días la persona sale «De vacaciones» y el turno avisa de que falta alguien.</p>' +
           '</section>' +
           '<section class="panel"><h2>Próximas vacaciones</h2>' +
@@ -1229,20 +1405,26 @@ tr.nowrow td { background: var(--accent-soft); }
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
     if (!weekHasData(mondayOf(new Date()))) generateWeek(mondayOf(new Date()));
     renderNow();
-    const views = { cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, vacaciones: renderVacaciones, ajustes: renderAjustes };
+    const views = { mi: renderMi, guardias: renderGuardias, cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, vacaciones: renderVacaciones, ajustes: renderAjustes };
     document.getElementById('tab-ajustes').hidden = !sync.canEdit;
     if (!sync.canEdit && ui.tab === 'ajustes') ui.tab = 'cuadrante';
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
+    const selTab = document.getElementById('tab-' + ui.tab);
+    if (selTab && selTab.scrollIntoView) { try { selTab.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {} }
     const pubBar = SYNC_ON && sync.canEdit && sync.dirty
-      ? '<div class="banner pub"><span><strong>Cambios sin publicar.</strong> El equipo todavía no los ve.</span><span class="actions">' +
+      ? '<div class="banner pub"><span><strong>Cambios sin publicar.</strong> El equipo todavía no los ve. <span id="autopub" class="muted"></span></span><span class="actions">' +
         (sync.publishing ? '<span>Publicando…</span>' : '<button class="btn sm" data-act="discard">Descartar</button><button class="btn primary" data-act="publish">Publicar para el equipo</button>') + '</span></div>'
       : '';
-    document.getElementById('main').innerHTML = pubBar + (views[ui.tab] || renderCuadrante)();
+    // Lo que se calcula al pintar (semanas nuevas) no cuenta como cambio de la propietaria.
+    const ue = ui.userEdit; ui.userEdit = false;
+    const body = (views[ui.tab] || renderCuadrante)();
+    ui.userEdit = ue;
+    document.getElementById('main').innerHTML = pubBar + body;
     if (!sync.canEdit) applyReadOnly();
   }
 
   // Quien solo consulta ve el cuadrante sin controles de edición.
-  const VIEW_ACTS = ['prev', 'next', 'thisweek', 'goto-week', 'year-prev', 'year-next'];
+  const VIEW_ACTS = ['prev', 'next', 'thisweek', 'goto-week', 'year-prev', 'year-next', 'me-pick', 'me-change'];
   function applyReadOnly() {
     const m = document.getElementById('main');
     const alta = m.querySelector('#alta-form'); if (alta && alta.closest('.panel')) alta.closest('.panel').remove();
@@ -1301,7 +1483,16 @@ tr.nowrow td { background: var(--accent-soft); }
       case 'publish': publishNow(); return;
       case 'discard':
         try { localStorage.removeItem(KEY + ':draft'); } catch (err) {}
-        S = JSON.parse(JSON.stringify(EMB)); migrate(); sync.dirty = false; toast('Cambios descartados.'); break;
+        S = JSON.parse(JSON.stringify(EMB)); migrate(); sync.dirty = false; clearTimeout(sync.autoTimer); sync.autoAt = 0; toast('Cambios descartados.'); break;
+      case 'vac-force': {
+        const v = ui.vacPending; if (!v) break;
+        S.vacations = (S.vacations || []).concat({ id: uid(), staffId: v.staffId, from: v.from, to: v.to, approvedOverlap: true });
+        ui.vacPending = null; save(); toast('Vacaciones aprobadas aunque coinciden con otra persona.'); break;
+      }
+      case 'vac-cancel': ui.vacPending = null; break;
+      case 'me-pick': ui.me = id; try { localStorage.setItem(KEY + ':me', id); } catch (err) {} break;
+      case 'me-change': ui.me = null; try { localStorage.removeItem(KEY + ':me'); } catch (err) {} break;
+      case 'g-del': S.guards = (S.guards || []).filter(g => g.id !== id); save(); toast('Guardia eliminada.'); break;
       case 'vac-del': S.vacations = (S.vacations || []).filter(v => v.id !== id); save(); toast('Vacaciones quitadas.'); break;
       case 'goto-week': ui.week = parse(el.dataset.w); ui.tab = 'cuadrante'; window.scrollTo(0, 0); break;
       case 'year-prev': ui.year--; break;
@@ -1370,6 +1561,12 @@ tr.nowrow td { background: var(--accent-soft); }
     const el = e.target;
     const act = el.dataset.act;
     if (!act) return;
+    if (act === 'g-toggle') {
+      const g = (S.guards || []).find(x => x.id === el.dataset.id); if (!g) return;
+      const sid = el.dataset.staff;
+      g.people = (g.people || []).filter(x => x !== sid).concat(el.checked ? [sid] : []);
+      save(); render(); return;
+    }
     if (act === 'photo') {
       const file = el.files && el.files[0];
       if (!file) return;
@@ -1424,12 +1621,24 @@ tr.nowrow td { background: var(--accent-soft); }
   document.addEventListener('submit', e => {
     e.preventDefault();
     userAct();
+    if (e.target.id === 'guard-form') {
+      const date = document.getElementById('g-date').value;
+      if (!date) { toast('Elige la fecha de la guardia.'); return; }
+      if ((S.guards || []).some(g => g.date === date)) { toast('Ya hay una guardia ese día.'); return; }
+      S.guards = (S.guards || []).concat({ id: uid(), date, type: document.getElementById('g-type').value, people: [] });
+      ui.year = Number(date.slice(0, 4));
+      save(); render(); toast('Guardia añadida: ' + longDate(parse(date)).toLowerCase() + '. Marca quién la hace.');
+      return;
+    }
     if (e.target.id === 'vac-form') {
       const staffId = document.getElementById('vac-who').value;
       let from = document.getElementById('vac-from').value, to = document.getElementById('vac-to').value;
       if (!from || !to) { toast('Elige las fechas de inicio y fin.'); return; }
       if (to < from) { const t = from; from = to; to = t; }
       if ((S.vacations || []).some(v => v.staffId === staffId && v.from <= to && from <= v.to)) { toast('Se solapa con otras vacaciones de esa persona.'); return; }
+      const clash = (S.vacations || []).filter(v => v.staffId !== staffId && v.from <= to && from <= v.to);
+      if (clash.length) { ui.vacPending = { staffId, from, to, clash: clash.map(v => v.id) }; render(); return; }
+      ui.vacPending = null;
       S.vacations = (S.vacations || []).concat({ id: uid(), staffId, from, to });
       save(); render();
       const sm = vacSummary(staffId, Number(from.slice(0, 4)));
@@ -1468,6 +1677,28 @@ tr.nowrow td { background: var(--accent-soft); }
     const content = PAGE_SOURCE.replace(/<script type="application\/json" id="estado">[\s\S]*?<\/script>/, () => '<script type="application/json" id="estado">' + json + '</' + 'script>');
     return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>' + PAGE_RESET + '</style></head><body>' + content + '</body></html>';
   }
+  // Se publica sola a los 2 minutos sin tocar nada, y al salir de la app si quedan cambios.
+  const AUTO_MS = 120000;
+  function scheduleAutoPublish() {
+    clearTimeout(sync.autoTimer);
+    sync.autoAt = Date.now() + AUTO_MS;
+    sync.autoTimer = setTimeout(autoPublish, AUTO_MS);
+  }
+  function autoPublish() {
+    if (!sync.dirty || sync.publishing) return;
+    const a = document.activeElement;
+    const busy = ui.editing || ui.vacPending || (a && a.closest && a.closest('#main form'));
+    if (busy) { sync.autoAt = Date.now() + 30000; sync.autoTimer = setTimeout(autoPublish, 30000); return; }
+    publishNow();
+  }
+  setInterval(() => {
+    const el = document.getElementById('autopub');
+    if (!el || !sync.autoAt) return;
+    const s = Math.max(0, Math.round((sync.autoAt - Date.now()) / 1000));
+    el.textContent = s > 0 ? 'Se publicará sola en ' + Math.floor(s / 60) + ':' + pad(s % 60) + ' si no haces más cambios.' : 'Publicando…';
+  }, 1000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && sync.dirty && !sync.publishing && sync.canEdit) publishNow(); });
+
   async function publishNow() {
     if (!sync.artifact || !PAGE_SOURCE || sync.publishing) { toast('No se puede publicar desde aquí.'); return; }
     sync.publishing = true; render(); setSync('saving', 'Publicando…');
@@ -1475,7 +1706,7 @@ tr.nowrow td { background: var(--accent-soft); }
     try {
       await sync.artifact.publish(buildPage());
       try { localStorage.removeItem(KEY + ':draft'); } catch (e) {}
-      sync.dirty = false;
+      sync.dirty = false; clearTimeout(sync.autoTimer); sync.autoAt = 0;
       setSync('ok', 'Publicado · el equipo ya lo ve');
       toast('Publicado. El equipo verá los cambios al abrir o recargar la app.');
     } catch (e) {
@@ -1501,7 +1732,7 @@ tr.nowrow td { background: var(--accent-soft); }
     // Recuperar un borrador sin publicar hecho sobre esta misma versión.
     try {
       const d = JSON.parse(localStorage.getItem(KEY + ':draft'));
-      if (d && d.S && d.baseRev === (EMB && EMB.rev || null)) { S = d.S; migrate(); sync.dirty = true; }
+      if (d && d.S && d.baseRev === (EMB && EMB.rev || null)) { S = d.S; migrate(); sync.dirty = true; scheduleAutoPublish(); }
       else localStorage.removeItem(KEY + ':draft');
     } catch (e) {}
     setSync('ok', sync.dirty ? 'Editando · cambios sin publicar' : 'Puedes editar · el equipo solo consulta');
