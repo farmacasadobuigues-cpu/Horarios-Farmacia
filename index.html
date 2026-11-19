@@ -95,14 +95,19 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .logo { width: 58px; height: 58px; flex: none; color: var(--on-brand); }
 .eyebrow { font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 600; color: var(--accent); }
 .brand p { margin: 2px 0 0; color: var(--on-brand-muted); font-size: 0.92rem; }
+.brand p.sync { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; padding: 1px 10px; border-radius: 4px; background: var(--brand-glass); border: 1px solid var(--brand-line); color: var(--on-brand); }
+.brand p.sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.brand p.sync[data-state="ro"]::before { background: var(--sage); }
+.brand p.sync[data-state="saving"]::before { background: #f2c14e; }
+.brand p.sync[data-state="error"]::before { background: #f28b82; }
 
-.tabs { display: grid; grid-template-columns: repeat(4, auto); gap: 2px; background: var(--brand-glass); border: 1px solid var(--brand-line); padding: 3px; border-radius: 6px; }
+.tabs { display: flex; gap: 2px; background: var(--brand-glass); border: 1px solid var(--brand-line); padding: 3px; border-radius: 6px; }
 .tabs button { border: 0; background: transparent; padding: 7px 18px; border-radius: 4px; cursor: pointer; font-weight: 600; color: var(--on-brand-muted); letter-spacing: 0.02em; }
 .tabs button:hover { color: var(--on-brand); }
 .tabs button[aria-selected="true"] { background: var(--on-brand); color: var(--brand); }
 :root[data-theme="dark"] .tabs button[aria-selected="true"] { background: var(--accent); color: #062126; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tabs button[aria-selected="true"] { background: var(--accent); color: #062126; } }
-@media (max-width: 560px) { .tabs { width: 100%; grid-template-columns: repeat(4, 1fr); } .tabs button { padding-inline: 4px; } }
+@media (max-width: 560px) { .tabs { width: 100%; } .tabs button { flex: 1; padding-inline: 4px; } }
 
 /* Ahora */
 .now { background: var(--brand-glass); border: 1px solid var(--brand-line); border-radius: var(--radius); padding: 14px 18px; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 12px 24px; align-items: center; }
@@ -274,6 +279,7 @@ tr.nowrow td { background: var(--accent-soft); }
           <div class="eyebrow">Cuadrante de turnos</div>
           <h1>Farmacia Carlos Casado Buigues</h1>
           <p id="subtitle"></p>
+          <p class="sync" id="sync" hidden></p>
         </div>
       </div>
       <nav class="tabs" role="tablist" aria-label="Secciones">
@@ -343,8 +349,13 @@ tr.nowrow td { background: var(--accent-soft); }
   }
 
   let S = null;
+  const SYNC_ON = !!(window.claude && typeof window.claude.use === 'function');
+  const sync = { db: null, canEdit: !SYNC_ON, ready: false, sent: {}, queue: Promise.resolve(), timer: null };
+  const remote = { config: undefined, years: null, fotos: null };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
   if (!S || !Array.isArray(S.staff)) S = seed();
+  let openYearView = false;
+  function migrate() {
   if (!S.version || S.version < 3) {
     // Lucía Rojo pasa a técnico; las tardes se cubren con 2 personas hasta la temporada alta.
     const lucia = S.staff.find(p => p.name === 'Lucía Rojo' && p.role === 'adjunto');
@@ -393,7 +404,6 @@ tr.nowrow td { background: var(--accent-soft); }
     S.settings.tStart = '14:30';
     S.version = 8;
   }
-  let openYearView = false;
   if (S.version < 9) {
     // Turnos de 2027 tomados del Excel «HORARIO 2027 turnos v2» (Drive):
     // Ramiro y Luci alternan por semanas (Ramiro empieza de mañana el 4-ene-2027),
@@ -474,7 +484,12 @@ tr.nowrow td { background: var(--accent-soft); }
     S.staff.forEach(p => { if (!p.avatar) p.avatar = av[p.name.split(' ')[0]] || 'droide'; });
     S.version = 14;
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
+  }
+  migrate();
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ }
+    if (typeof scheduleFlush === 'function') scheduleFlush();
+  }
 
   const ui = { tab: 'cuadrante', week: mondayOf(new Date()), year: 2027, confirm: null, editing: null };
   try { const t = localStorage.getItem(KEY + ':tab'); if (t) ui.tab = t; } catch (e) {}
@@ -948,7 +963,7 @@ tr.nowrow td { background: var(--accent-soft); }
         '</section>' +
         '<section class="panel"><div class="panel-h"><h2>Equipo en activo</h2><span class="muted" style="font-size:.85rem">' + act.length + ' personas · horas de esta semana</span></div>' +
           '<div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Turno habitual</th><th>Alta</th><th class="num">Horas</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-          '<p class="note">Con «Foto» puedes poner a cada persona una imagen pequeña de su personaje (JPG o PNG). Se recorta en cuadrado y sustituye al dibujo; «Quitar foto» lo devuelve.</p>' +
+          '<p class="note edit-only">Con «Foto» puedes poner a cada persona una imagen pequeña de su personaje (JPG o PNG). Se recorta en cuadrado y sustituye al dibujo; «Quitar foto» lo devuelve.</p>' +
         '</section>' +
         (gone.length ? '<section class="panel"><div class="panel-h"><h2>Bajas</h2></div><div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Fecha de baja</th><th></th></tr></thead><tbody>' + goneRows + '</tbody></table></div></section>' : '') +
       '</div>' +
@@ -1096,7 +1111,20 @@ tr.nowrow td { background: var(--accent-soft); }
     if (!weekHasData(mondayOf(new Date()))) generateWeek(mondayOf(new Date()));
     renderNow();
     const views = { cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, ajustes: renderAjustes };
+    document.getElementById('tab-ajustes').hidden = !sync.canEdit;
+    if (!sync.canEdit && ui.tab === 'ajustes') ui.tab = 'cuadrante';
     document.getElementById('main').innerHTML = (views[ui.tab] || renderCuadrante)();
+    if (!sync.canEdit) applyReadOnly();
+  }
+
+  // Quien solo consulta ve el cuadrante sin controles de edición.
+  const VIEW_ACTS = ['prev', 'next', 'thisweek', 'goto-week', 'year-prev', 'year-next'];
+  function applyReadOnly() {
+    const m = document.getElementById('main');
+    const alta = m.querySelector('#alta-form'); if (alta && alta.closest('.panel')) alta.closest('.panel').remove();
+    m.querySelectorAll('button[data-act]').forEach(b => { if (!VIEW_ACTS.includes(b.dataset.act)) b.remove(); });
+    m.querySelectorAll('label.btn, select.add, .actions .muted, .edit-only').forEach(e => e.remove());
+    m.querySelectorAll('select, input, textarea').forEach(e => { e.disabled = true; });
   }
 
   let toastTimer;
@@ -1282,7 +1310,106 @@ tr.nowrow td { background: var(--accent-soft); }
     }
   });
 
-  render();
+  // ---------- Cuadrante compartido (base de datos del artifact) ----------
+  // Dentro de claude.ai: un único cuadrante en la nube. Edita quien tiene permiso de edición
+  // (la propietaria); el resto solo consulta. Abierto como archivo suelto, funciona en local.
+  function setSync(state, text) {
+    const el = document.getElementById('sync');
+    el.hidden = false; el.dataset.state = state; el.textContent = text;
+  }
+  function parts() {
+    const out = {};
+    const staff = S.staff.map(p => { const c = Object.assign({}, p); delete c.photo; return c; });
+    out['farmacia/config'] = { version: S.version, settings: S.settings, staff, holidays: S.holidays || {}, weekPlan: S.weekPlan || {} };
+    Object.keys(S.schedule).forEach(k => { const y = 'cuadrante/' + k.slice(0, 4); (out[y] || (out[y] = { days: {} })).days[k] = S.schedule[k]; });
+    S.staff.forEach(p => { if (p.photo) out['fotos/' + p.id] = { src: p.photo }; });
+    return out;
+  }
+  function scheduleFlush() {
+    if (!sync.db || !sync.canEdit || !sync.ready) return;
+    clearTimeout(sync.timer);
+    sync.timer = setTimeout(flush, 600);
+  }
+  function flush() {
+    const now = parts();
+    const paths = new Set(Object.keys(now).concat(Object.keys(sync.sent)));
+    let pending = 0;
+    paths.forEach(path => {
+      const body = now[path];
+      const json = body ? JSON.stringify(body) : null;
+      if (json === (sync.sent[path] === undefined ? null : sync.sent[path])) return;
+      sync.sent[path] = json;
+      pending++;
+      sync.queue = sync.queue
+        .then(() => body ? sync.db.doc(path).set(body) : sync.db.doc(path).delete())
+        .catch(e => { sync.sent[path] = undefined; setSync('error', e && e.code === 'quota_exceeded' ? 'Sin espacio para guardar' : 'No se ha podido guardar: revisa la conexión'); });
+    });
+    if (pending) {
+      setSync('saving', 'Guardando…');
+      sync.queue = sync.queue.then(() => { if (document.getElementById('sync').dataset.state === 'saving') setSync('ok', 'Compartido · guardado para todo el equipo'); });
+    }
+  }
+  function applyRemote() {
+    if (remote.config === undefined || !remote.years || !remote.fotos) return;   // aún falta algo
+    const first = !sync.ready;
+    sync.ready = true;
+    if (!sync.canEdit) setSync('ro', 'Solo consulta');
+    else if (first) setSync('ok', 'Compartido · guardado para todo el equipo');
+    if (!remote.config) {
+      // Base de datos vacía: la propietaria publica su cuadrante; el resto ve el de serie.
+      if (sync.canEdit) { sync.sent = {}; flush(); }
+      else setSync('ro', 'Solo consulta');
+      if (first) render();
+      return;
+    }
+    const c = remote.config;
+    const schedule = {};
+    Object.keys(remote.years).sort().forEach(y => Object.assign(schedule, remote.years[y].days || {}));
+    const staff = (c.staff || []).map(p => Object.assign({}, p, remote.fotos[p.id] ? { photo: remote.fotos[p.id] } : {}));
+    const next = JSON.parse(JSON.stringify({ version: c.version, settings: c.settings, staff, schedule, holidays: c.holidays || {}, weekPlan: c.weekPlan || {} }));
+    if (!first && JSON.stringify(next) === JSON.stringify(S)) return;
+    S = next;
+    sync.sent = {};
+    Object.entries(parts()).forEach(([k, v]) => { sync.sent[k] = JSON.stringify(v); });
+    migrate();
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+    if (sync.canEdit) flush();
+    if (!ui.editing) render();
+  }
+  async function startSync() {
+    if (!SYNC_ON) return;
+    render();   // modo consulta mientras se comprueba el permiso
+    let db = null, user = null;
+    try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch (e) {}
+    try { sync.canEdit = user ? await user.canEdit() : false; } catch (e) { sync.canEdit = false; }
+    if (!db) {
+      sync.canEdit = false;
+      setSync('ro', 'Solo consulta · cuadrante de serie');
+      render();
+      return;
+    }
+    sync.db = db;
+    setSync(sync.canEdit ? 'saving' : 'ro', 'Cargando cuadrante compartido…');
+    const slow = setTimeout(() => { if (!sync.ready) setSync('error', 'Sin conexión: se muestra la última copia de este dispositivo'); }, 10000);
+    const fail = () => { clearTimeout(slow); setSync('error', 'No se puede cargar el cuadrante compartido'); };
+    db.doc('farmacia/config').onSnapshot(snap => {
+      remote.config = snap.exists ? snap.data() : null;
+      if (!snap.metadata.fromCache) clearTimeout(slow);
+      if (!sync.ready || !snap.metadata.hasPendingWrites) applyRemote();
+      if (sync.ready && !sync.canEdit) setSync('ro', 'Solo consulta');
+      else if (sync.ready && document.getElementById('sync').dataset.state !== 'saving') setSync('ok', 'Compartido · guardado para todo el equipo');
+    }, fail);
+    db.collection('cuadrante').onSnapshot(snap => {
+      remote.years = {}; snap.docs.forEach(d => { remote.years[d.id] = d.data(); });
+      if (!sync.ready || !snap.metadata.hasPendingWrites) applyRemote();
+    }, fail);
+    db.collection('fotos').onSnapshot(snap => {
+      remote.fotos = {}; snap.docs.forEach(d => { remote.fotos[d.id] = d.data().src; });
+      if (!sync.ready || !snap.metadata.hasPendingWrites) applyRemote();
+    }, fail);
+  }
+
+  if (SYNC_ON) startSync(); else render();
   setInterval(renderNow, 60000);
 })();
 </script>

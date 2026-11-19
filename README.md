@@ -2,7 +2,7 @@
 
 Aplicación web para organizar los turnos del equipo de una farmacia comunitaria y las guardias.
 
-Abre `index.html` en cualquier navegador: no necesita instalación ni servidor. Los datos se guardan en el propio navegador (en **Ajustes** puedes copiarlos como copia de seguridad o pasarlos a otro equipo).
+Publicada en claude.ai como app compartida: el cuadrante se guarda en la nube, la propietaria lo edita y el equipo solo lo consulta (también desde el móvil, añadiéndolo a la pantalla de inicio). Abierto como archivo suelto (`index.html`), funciona en local y guarda los datos en el navegador.
 
 ## Imagen
 
