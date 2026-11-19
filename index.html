@@ -427,6 +427,14 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     S.version = 10;
     openYearView = true;
   }
+  if (S.version < 11) {
+    // Festivos autonómicos de la Comunitat Valenciana que se repiten cada año.
+    S.holidays = S.holidays || {};
+    S.holidays['2027-03-29'] = S.holidays['2027-03-29'] || 'Lunes de Pascua (Comunitat Valenciana)';
+    S.holidays['2027-10-09'] = S.holidays['2027-10-09'] || 'Día de la Comunitat Valenciana';
+    Object.keys(S.schedule).forEach(k => { if (k >= '2027-03-29') delete S.schedule[k]; });
+    S.version = 11;
+  }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
 
   const ui = { tab: 'cuadrante', week: mondayOf(new Date()), year: 2027, confirm: null, editing: null };
