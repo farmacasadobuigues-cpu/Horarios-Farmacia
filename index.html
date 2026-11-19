@@ -307,11 +307,11 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const staff = [
       { id: 's2', name: 'Ramiro González', role: 'adjunto',  shift: altCode('M') },
       { id: 's3', name: 'Lucía Rojo',      role: 'tecnico',  shift: altCode('T'), lead: true },
-      { id: 's4', name: 'Anastasia',       role: 'auxiliar', shift: 'M' },
+      { id: 's4', name: 'Anastasia',       role: 'auxiliar', shift: 'M', senior: true },
       { id: 's5', name: 'Aizane',          role: 'auxiliar', shift: 'M' },
       { id: 's6', name: 'Lorena',          role: 'auxiliar', shift: 'T' }
     ].map(p => Object.assign(p, { active: true, since: since, until: null }));
-    return { version: 5, settings: { open: '09:00', days: [1, 2, 3, 4, 5, 6], min: { M: 3, T: 2 } }, staff, schedule: {} };
+    return { version: 6, settings: { open: '09:00', days: [1, 2, 3, 4, 5, 6], min: { M: 3, T: 2 }, sat: { close: '14:00', min: 2 } }, staff, schedule: {} };
   }
 
   let S = null;
@@ -346,6 +346,15 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     Object.keys(S.schedule).forEach(k => { if (k >= t) delete S.schedule[k]; });
     S.version = 5;
   }
+  if (S.version < 6) {
+    // Sábados de 9:00 a 14:00 con 2 personas en rotación; Anastasia puede llevar el sábado.
+    S.settings.sat = S.settings.sat || { close: '14:00', min: 2 };
+    const ana = S.staff.find(p => p.name === 'Anastasia');
+    if (ana) ana.senior = true;
+    const t = ymd(mondayOf(new Date()));
+    Object.keys(S.schedule).forEach(k => { if (k >= t) delete S.schedule[k]; });
+    S.version = 6;
+  }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
 
   const ui = { tab: 'cuadrante', week: mondayOf(new Date()), confirm: null, editing: null };
@@ -378,6 +387,42 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     : code === 'T' ? 'Tarde' : 'Mañana';
   // Responsable de turno: un farmacéutico o una persona marcada como responsable.
   const isLead = p => !!p && (isPharm(p) || !!p.lead);
+  // Sábado: jornada corta de mañana con rotación propia.
+  const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const isSat = d => d.getDay() === 6 && !!S.settings.sat;
+  const keySat = key => isSat(parse(key));
+  const dayShifts = key => keySat(key) ? ['M'] : SHIFTS;
+  const shTimes = (key, sh) => keySat(key) ? [openMin(), toMin(S.settings.sat.close)] : times(sh);
+  const shRange = (key, sh) => hm(shTimes(key, sh)[0]) + '–' + hm(shTimes(key, sh)[1]);
+  const shHours = (key, sh) => { const [a, b] = shTimes(key, sh); return (b - a) / 60; };
+  const needOn = (key, sh) => keySat(key) ? S.settings.sat.min : need(sh);
+  const canLeadSat = p => isLead(p) || !!(p && p.senior);
+  const satRange = () => hm(openMin()) + '–' + S.settings.sat.close;
+
+  // Rotación de sábados: reparto equitativo y estable. Se simula semana a semana desde una semana fija:
+  // cada sábado entran quienes menos sábados llevan (y hace más que no trabajan uno),
+  // y siempre al menos una persona que pueda llevar el sábado.
+  const SAT_ANCHOR = new Date(2026, 10, 16);
+  function satRotation(monday) {
+    const team = activeStaff().filter(p => p.role !== 'estudiante');
+    const n = Math.min(S.settings.sat.min, team.length);
+    const count = {}, last = {};
+    team.forEach(p => { count[p.id] = 0; last[p.id] = -99; });
+    const steps = Math.max(0, Math.round((monday - SAT_ANCHOR) / (7 * 864e5)));
+    let pickNow = [];
+    for (let w = 0; w <= steps; w++) {
+      const chosen = [];
+      for (let k = 0; k < n; k++) {
+        let pool = team.filter(p => !chosen.includes(p));
+        if (k === n - 1 && !chosen.some(canLeadSat) && pool.some(canLeadSat)) pool = pool.filter(canLeadSat);
+        pool.sort((a, b) => count[a.id] - count[b.id] || last[a.id] - last[b.id] || team.indexOf(a) - team.indexOf(b));
+        if (pool[0]) chosen.push(pool[0]);
+      }
+      chosen.forEach(p => { count[p.id]++; last[p.id] = w; });
+      pickNow = chosen;
+    }
+    return pickNow;
+  }
   const initials = p => p.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const avatar = p => '<span class="av role-' + p.role + '" aria-hidden="true">' + esc(initials(p)) + '</span>';
   const roleBadge = p => '<span class="badge role-' + p.role + '">' + ROLES[p.role].short + '</span>';
@@ -388,7 +433,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const ph = out.filter(a => isLead(byId(a.id)))
       .sort((a, b) => ROLES[byId(a.id).role].order - ROLES[byId(b.id).role].order);
     // El responsable del turno (preferiblemente el farmacéutico) supervisa el mostrador; si hay otro, gestión.
-    ph.forEach((a, k) => { a.resp = k === 0 ? 'mostrador' : 'gestion'; });
+    ph.forEach((a, k) => { a.resp = k === 0 || out.length <= 2 ? 'mostrador' : 'gestion'; });
     out.filter(a => byId(a.id).role === 'estudiante').forEach(a => { a.resp = 'practicas'; });
     const aux = out.filter(a => !a.resp);
     let counter = out.filter(a => a.resp === 'mostrador').length + aux.length;
@@ -410,10 +455,17 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       const existing = S.schedule[key];
       // No se reescriben días pasados que ya tienen cuadrante.
       if (key < today && existing) {
-        SHIFTS.forEach(sh => (existing[sh] || []).forEach(a => { hours[a.id] = (hours[a.id] || 0) + 6; }));
+        SHIFTS.forEach(sh => (existing[sh] || []).forEach(a => { hours[a.id] = (hours[a.id] || 0) + shHours(key, sh); }));
         continue;
       }
       if (!isOpenDay(d)) { delete S.schedule[key]; continue; }
+      if (isSat(d)) {
+        const list = satRotation(monday);
+        list.forEach(p => { hours[p.id] = (hours[p.id] || 0) + shHours(key, 'M'); });
+        S.schedule[key] = { M: assignResp(list, i), T: [] };
+        changed++;
+        continue;
+      }
       const day = { M: [], T: [] };
       const used = new Set();
       SHIFTS.forEach(sh => {
@@ -456,8 +508,9 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const people = list.map(a => byId(a.id)).filter(Boolean);
     const valid = people.filter(p => activeOn(p, key));
     const count = valid.filter(p => p.role !== 'estudiante').length;
-    if (!valid.some(isLead)) out.push({ lvl: 'err', t: 'Sin farmacéutico ni responsable' });
-    const n = need(sh);
+    if (keySat(key)) { if (!valid.some(canLeadSat)) out.push({ lvl: 'err', t: 'Falta alguien que pueda llevar el sábado' }); }
+    else if (!valid.some(isLead)) out.push({ lvl: 'err', t: 'Sin farmacéutico ni responsable' });
+    const n = needOn(key, sh);
     if (count < n) out.push({ lvl: 'err', t: 'Falta' + (n - count > 1 ? 'n ' : ' ') + (n - count) + (n - count > 1 ? ' personas' : ' persona') });
     if (count > n) out.push({ lvl: 'info', t: 'Refuerzo: ' + count + ' personas' });
     if (valid.length && !list.some(a => a.resp === 'mostrador' && byId(a.id) && activeOn(byId(a.id), key))) out.push({ lvl: 'warn', t: 'Nadie en mostrador' });
@@ -472,7 +525,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     for (let i = 0; i < 7; i++) {
       const d = addDays(monday, i), key = ymd(d);
       if (!isOpenDay(d) && !S.schedule[key]) continue;
-      SHIFTS.forEach(sh => shiftIssues(key, sh).forEach(x => { if (x.lvl === 'err') err++; else if (x.lvl === 'warn') warn++; }));
+      dayShifts(key).forEach(sh => shiftIssues(key, sh).forEach(x => { if (x.lvl === 'err') err++; else if (x.lvl === 'warn') warn++; }));
     }
     return { err, warn };
   }
@@ -483,10 +536,10 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const mins = now.getHours() * 60 + now.getMinutes();
     const key = ymd(now);
     let label = 'Ahora · ' + hm(mins), state, people = '';
-    const shiftNow = SHIFTS.find(sh => { const [a, b] = times(sh); return mins >= a && mins < b; });
+    const shiftNow = dayShifts(key).find(sh => { const [a, b] = shTimes(key, sh); return mins >= a && mins < b; });
     const day = S.schedule[key];
     if (isOpenDay(now) && shiftNow && day) {
-      state = 'Turno de ' + SH_LABEL[shiftNow].toLowerCase() + ' <span class="mono muted">' + range(shiftNow) + '</span>';
+      state = (keySat(key) ? 'Sábado' : 'Turno de ' + SH_LABEL[shiftNow].toLowerCase()) + ' <span class="mono muted">' + shRange(key, shiftNow) + '</span>';
       people = (day[shiftNow] || []).map(a => {
         const p = byId(a.id); if (!p) return '';
         return '<span class="who role-' + p.role + '">' + avatar(p) + '<span class="who-t"><strong>' + esc(p.name) + '</strong><small>' + ROLES[p.role].short + ' · ' + RESP[a.resp] + '</small></span></span>';
@@ -499,7 +552,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       '<div><div class="label"><span class="live"></span>' + label + '</div><div class="state">' + state + '</div></div>' +
       '<div class="people">' + people + '</div>';
     document.getElementById('subtitle').textContent =
-      'Abierto ' + hm(times('M')[0]) + '–' + hm(times('T')[1]) + ' · 12 h · ' + need('M') + ' personas de mañana y ' + need('T') + ' de tarde, siempre con farmacéutico o responsable';
+      'Abierto ' + hm(times('M')[0]) + '–' + hm(times('T')[1]) + (S.settings.sat && S.settings.days.includes(6) ? ' · sábados ' + satRange() : '') + ' · ' + need('M') + ' personas de mañana y ' + need('T') + ' de tarde';
   }
   function nextOpening(now) {
     const mins = now.getHours() * 60 + now.getMinutes();
@@ -554,12 +607,12 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
         continue;
       }
       html += '<article class="day' + (isToday ? ' today' : '') + '">' + head;
-      SHIFTS.forEach(sh => {
+      dayShifts(key).forEach(sh => {
         const list = (S.schedule[key] && S.schedule[key][sh]) || [];
         const iss = shiftIssues(key, sh);
         const ok = !iss.some(x => x.lvl === 'err');
-        html += '<section class="shift sh-' + sh + '"><div class="shift-h"><span><strong>' + SH_LABEL[sh] + '</strong><span class="mono">' + range(sh) + '</span></span>' +
-          '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + need(sh) + '</span></div><ul>';
+        html += '<section class="shift sh-' + sh + '"><div class="shift-h"><span><strong>' + (keySat(key) ? 'Mañana' : SH_LABEL[sh]) + '</strong><span class="mono">' + shRange(key, sh) + '</span></span>' +
+          '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + needOn(key, sh) + '</span></div><ul>';
         list.forEach(a => {
           const p = byId(a.id); if (!p) return;
           html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(p.name.trim().split(/\s+/)[0]) + '</span><span class="r">' + ROLES[p.role].short + (p.lead && !isPharm(p) ? ' · Responsable' : '') + '</span></span>' +
@@ -597,18 +650,18 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       const key = ymd(addDays(monday, i));
       const day = S.schedule[key]; if (!day) continue;
       SHIFTS.forEach(sh => (day[sh] || []).forEach(a => {
-        const r = rows[a.id] || (rows[a.id] = { M: 0, T: 0, mostrador: 0, admin: 0, gestion: 0, practicas: 0 });
-        r[sh]++; r[a.resp]++;
+        const r = rows[a.id] || (rows[a.id] = { M: 0, T: 0, S: 0, h: 0, mostrador: 0, admin: 0, gestion: 0, practicas: 0 });
+        r[keySat(key) ? 'S' : sh]++; r[a.resp]++; r.h += shHours(key, sh);
       }));
     }
     const people = S.staff.filter(p => p.active || rows[p.id])
       .sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
-    return '<section class="panel"><div class="panel-h"><h2>Resumen de la semana</h2><span class="muted" style="font-size:.85rem">Cada turno son 6 horas</span></div>' +
-      '<div class="tablewrap"><table><thead><tr><th>Persona</th><th>Rol</th><th class="num">Mañanas</th><th class="num">Tardes</th><th class="num">Horas</th><th class="num">Mostrador</th><th class="num">Admin.</th><th class="num">Gestión</th></tr></thead><tbody>' +
+    return '<section class="panel"><div class="panel-h"><h2>Resumen de la semana</h2><span class="muted" style="font-size:.85rem">Mañana y tarde: 6 h · sábado: ' + (toMin(S.settings.sat ? S.settings.sat.close : '15:00') - openMin()) / 60 + ' h</span></div>' +
+      '<div class="tablewrap"><table><thead><tr><th>Persona</th><th>Rol</th><th class="num">Mañanas</th><th class="num">Tardes</th><th class="num">Sábados</th><th class="num">Horas</th><th class="num">Mostrador</th><th class="num">Admin.</th><th class="num">Gestión</th></tr></thead><tbody>' +
       people.map(p => {
-        const r = rows[p.id] || { M: 0, T: 0, mostrador: 0, admin: 0, gestion: 0, practicas: 0 };
+        const r = rows[p.id] || { M: 0, T: 0, S: 0, h: 0, mostrador: 0, admin: 0, gestion: 0, practicas: 0 };
         return '<tr><td><span class="person">' + avatar(p) + esc(p.name) + (p.active ? '' : ' <span class="muted">(baja)</span>') + '</span></td><td>' + roleBadge(p) + '</td>' +
-          '<td class="num">' + r.M + '</td><td class="num">' + r.T + '</td><td class="num"><strong>' + (r.M + r.T) * 6 + ' h</strong></td>' +
+          '<td class="num">' + r.M + '</td><td class="num">' + r.T + '</td><td class="num">' + r.S + '</td><td class="num"><strong>' + r.h + ' h</strong></td>' +
           '<td class="num">' + r.mostrador + '</td><td class="num">' + r.admin + '</td><td class="num">' + r.gestion + '</td></tr>';
       }).join('') + '</tbody></table></div></section>';
   }
@@ -619,10 +672,12 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const adj = act.filter(p => p.role === 'adjunto').length;
     const team = act.filter(p => p.role !== 'estudiante').length;
     const leads = act.filter(isLead).length;
+    const satLeads = act.filter(canLeadSat);
     return [
       { ok: adj >= 1, t: 'Farmacéuticos adjuntos en plantilla: <strong>' + adj + '</strong> (mínimo 1)' },
       { ok: leads >= 2, t: 'Farmacéutico o responsable para mañana y tarde: <strong>' + leads + '</strong> (mínimo 2)' },
       { ok: team >= need('M') + need('T'), t: 'Personas para ' + need('M') + ' de mañana + ' + need('T') + ' de tarde: <strong>' + team + '</strong> (mínimo ' + (need('M') + need('T')) + ')' },
+      { ok: satLeads.length >= 1, t: 'Pueden llevar el sábado: <strong>' + (satLeads.map(p => esc(p.name.split(' ')[0])).join(', ') || 'nadie') + '</strong>' },
     ];
   }
 
@@ -632,7 +687,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const monday = mondayOf(new Date());
     const hoursWeek = id => {
       let h = 0;
-      for (let i = 0; i < 7; i++) { const day = S.schedule[ymd(addDays(monday, i))]; if (day) SHIFTS.forEach(sh => { if ((day[sh] || []).some(a => a.id === id)) h += 6; }); }
+      for (let i = 0; i < 7; i++) { const day = S.schedule[ymd(addDays(monday, i))]; const k = ymd(addDays(monday, i)); if (day) SHIFTS.forEach(sh => { if ((day[sh] || []).some(a => a.id === id)) h += shHours(k, sh); }); }
       return h;
     };
     const roleOpts = sel => Object.keys(ROLES).map(r => '<option value="' + r + '"' + (r === sel ? ' selected' : '') + '>' + ROLES[r].label + '</option>').join('');
@@ -642,12 +697,12 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       if (ui.editing === p.id) {
         return '<tr><td><input id="ed-name" value="' + esc(p.name) + '" aria-label="Nombre"></td>' +
           '<td><select id="ed-role" aria-label="Rol">' + roleOpts(p.role) + '</select></td>' +
-          '<td><select id="ed-shift" aria-label="Turno habitual">' + prefOpts(p.shift) + '</select></td><td colspan="2"><label class="chk"><input type="checkbox" id="ed-lead"' + (p.lead ? ' checked' : '') + '> Responsable de turno</label></td>' +
+          '<td><select id="ed-shift" aria-label="Turno habitual">' + prefOpts(p.shift) + '</select></td><td colspan="2"><label class="chk"><input type="checkbox" id="ed-lead"' + (p.lead ? ' checked' : '') + '> Responsable de turno</label><label class="chk"><input type="checkbox" id="ed-senior"' + (p.senior ? ' checked' : '') + '> Puede llevar el sábado</label></td>' +
           '<td><div class="rowact"><button class="btn primary sm" data-act="ed-save" data-id="' + p.id + '">Guardar</button><button class="btn sm" data-act="cancel">Cancelar</button></div></td></tr>';
       }
       const confirming = ui.confirm === 'baja:' + p.id;
       return '<tr><td><span class="person">' + avatar(p) + esc(p.name) + '</span></td>' +
-        '<td>' + roleBadge(p) + (p.lead && !isPharm(p) ? ' <span class="badge lead">Responsable</span>' : '') + '</td><td>' + prefLabel(p.shift) + '</td>' +
+        '<td>' + roleBadge(p) + (p.lead && !isPharm(p) ? ' <span class="badge lead">Responsable</span>' : '') + (p.senior && !isLead(p) ? ' <span class="badge lead">Lleva sábado</span>' : '') + '</td><td>' + prefLabel(p.shift) + '</td>' +
         '<td class="mono muted">' + shortDate(parse(p.since)) + ' ' + p.since.slice(0, 4) + '</td>' +
         '<td class="num">' + hoursWeek(p.id) + ' h</td>' +
         '<td><div class="rowact">' + (confirming
@@ -669,6 +724,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
             '<div class="field"><label for="alta-role">Rol</label><select id="alta-role">' + roleOpts('auxiliar') + '</select></div>' +
             '<div class="field"><label for="alta-shift">Turno habitual</label><select id="alta-shift">' + prefOpts('M') + '</select></div>' +
             '<label class="chk"><input type="checkbox" id="alta-lead"> Responsable de turno</label>' +
+            '<label class="chk"><input type="checkbox" id="alta-senior"> Puede llevar el sábado</label>' +
             '<button class="btn primary" type="submit">Dar de alta</button>' +
           '</form>' +
           '<p class="note">Los estudiantes en prácticas van como refuerzo tutorizado: no cuentan para el mínimo de personas del turno.</p>' +
@@ -680,7 +736,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       '</div>' +
       '<section class="panel"><h2>Requisitos de plantilla</h2><ul class="checks">' +
         checks.map(c => '<li><span class="mark ' + (c.ok ? 'ok' : 'err') + '">' + (c.ok ? '✓' : '!') + '</span><span>' + c.t + '</span></li>').join('') +
-      '</ul><p class="note">No se puede dar de baja al último farmacéutico adjunto. Cada turno necesita un farmacéutico o una persona marcada como responsable de turno. El cuadrante se genera con el turno habitual de cada persona y reparte mostrador, administración y gestión.</p></section>' +
+      '</ul><p class="note">No se puede dar de baja al último farmacéutico adjunto. Cada turno de entre semana necesita un farmacéutico o una persona responsable de turno. Los sábados rotan entre todo el equipo, siempre con alguien que pueda llevar el sábado. El cuadrante se genera con el turno habitual de cada persona y reparte mostrador, administración y gestión.</p></section>' +
     '</div>';
   }
 
@@ -703,6 +759,14 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
               [1, 2, 3, 4, 5].map(n => '<option' + (n === need(sh) ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div>').join('') +
           '</div>' +
           '<p class="note">Cuando contratéis a la sexta persona para la temporada alta, sube la tarde a 3 y pulsa «Generar cuadrante».</p>' +
+          '<h3 style="font-family:var(--f-display)">Sábados</h3>' +
+          '<div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">' +
+            '<div class="field"><label for="set-sat-close">Cierre del sábado</label><select id="set-sat-close" data-act="set-sat-close">' +
+              ['12:00', '13:00', '13:30', '14:00', '14:30', '15:00'].map(o => '<option' + (o === S.settings.sat.close ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></div>' +
+            '<div class="field"><label for="set-sat-min">Personas el sábado</label><select id="set-sat-min" data-act="set-sat-min">' +
+              [1, 2, 3, 4].map(n => '<option' + (n === S.settings.sat.min ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div>' +
+          '</div>' +
+          '<p class="note">Sábado <span class="mono">' + satRange() + '</span>. Rotan todas las personas por igual y siempre entra al menos una que pueda llevar el sábado (se marca en Equipo).</p>' +
           '<div class="field"><label>Días de apertura</label><div class="daychecks">' +
             order.map(d => '<label><input type="checkbox" data-act="set-day" value="' + d + '"' + (S.settings.days.includes(d) ? ' checked' : '') + '> ' + DAYS[d] + '</label>').join('') +
           '</div></div>' +
@@ -714,7 +778,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           '<div class="actions"><button class="btn" data-act="copy">Copiar datos</button><button class="btn" data-act="import">Cargar datos pegados</button></div>' +
         '</section>' +
       '</div>' +
-      '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo inicial: Ramiro (adjunto), Lucía (técnico) y Anastasia, Aizane y Lorena (auxiliares).</p><div class="actions">' + reset + '</div></section>' +
+      '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo inicial: Ramiro (adjunto), Lucía (técnico, responsable) y Anastasia, Aizane y Lorena (auxiliares).</p><div class="actions">' + reset + '</div></section>' +
     '</div>';
   }
 
@@ -804,7 +868,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           toast('Ya hay una persona titular.'); return;
         }
         if (p.role === 'titular' && role !== 'titular') { toast('La titular no puede cambiar de rol.'); return; }
-        p.name = name; p.role = role; p.shift = document.getElementById('ed-shift').value; p.lead = document.getElementById('ed-lead').checked;
+        p.name = name; p.role = role; p.shift = document.getElementById('ed-shift').value; p.lead = document.getElementById('ed-lead').checked; p.senior = document.getElementById('ed-senior').checked;
         ui.editing = null; save(); toast('Datos actualizados.'); break;
       }
       case 'reset': ui.confirm = 'reset'; break;
@@ -843,6 +907,10 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       const list = day[el.dataset.sh];
       const hasCounter = list.some(x => x.resp === 'mostrador');
       list.push({ id: p.id, resp: p.role === 'estudiante' ? 'practicas' : hasCounter && !isPharm(p) ? 'mostrador' : (isPharm(p) && list.some(x => isPharm(byId(x.id))) ? 'gestion' : 'mostrador') });
+    } else if (act === 'set-sat-close') {
+      S.settings.sat.close = el.value;
+    } else if (act === 'set-sat-min') {
+      S.settings.sat.min = Number(el.value);
     } else if (act === 'set-min') {
       S.settings.min = Object.assign({ M: 3, T: 3 }, S.settings.min, { [el.dataset.sh]: Number(el.value) });
     } else if (act === 'set-open') {
@@ -861,7 +929,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       const role = document.getElementById('alta-role').value;
       if (!name) { toast('Escribe el nombre de la persona.'); return; }
       if (role === 'titular' && S.staff.some(p => p.active && p.role === 'titular')) { toast('Ya hay una persona titular en la farmacia.'); return; }
-      S.staff.push({ id: uid(), name, role, shift: document.getElementById('alta-shift').value, lead: document.getElementById('alta-lead').checked, active: true, since: todayKey(), until: null });
+      S.staff.push({ id: uid(), name, role, shift: document.getElementById('alta-shift').value, lead: document.getElementById('alta-lead').checked, senior: document.getElementById('alta-senior').checked, active: true, since: todayKey(), until: null });
       save(); render();
       toast(name + ' dada/o de alta como ' + ROLES[role].label.toLowerCase() + '. Pulsa «Generar cuadrante» para incluirla/o.');
     }
