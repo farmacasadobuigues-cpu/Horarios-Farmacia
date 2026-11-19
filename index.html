@@ -1,0 +1,873 @@
+<!doctype html><!--wrap-->
+<html lang="es"><!--wrap-->
+<head><!--wrap-->
+<meta charset="utf-8"><!--wrap-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><!--wrap-->
+<title>Cuadrante de Turnos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
+<style>
+/* Layout: cabecera con estado "ahora", pestañas, y cuadrícula de días (tarjeta por día con mañana/tarde) que se apila en móvil */
+:root {
+  --bg: #f3f6f5;
+  --surface: #ffffff;
+  --surface-2: #e9efed;
+  --fg: #15211e;
+  --muted: #5a6a65;
+  --line: #d5dfdb;
+  --accent: #0d6b57;
+  --accent-fg: #ffffff;
+  --accent-soft: #d8eee7;
+  --r-tit: #6a46b8;   --r-tit-soft: #ece5fa;
+  --r-adj: #0d6b57;   --r-adj-soft: #d8eee7;
+  --r-aux: #2a5c9c;   --r-aux-soft: #e0eaf7;
+  --r-est: #9a5d06;   --r-est-soft: #f8ead3;
+  --ok: #1e7a3c;      --ok-soft: #dcf1e2;
+  --warn: #9a5800;    --warn-soft: #fbecd2;
+  --err: #b3261e;     --err-soft: #f9dedb;
+  --guard: #1f3a8a;   --guard-soft: #e2e8fb;
+  --f-display: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1513; --surface: #151f1c; --surface-2: #1c2926; --fg: #e2ebe8; --muted: #98a9a3; --line: #2a3a36;
+    --accent: #4cc2a3; --accent-fg: #052219; --accent-soft: #143a31;
+    --r-tit: #b8a0ee; --r-tit-soft: #2c2347; --r-adj: #4cc2a3; --r-adj-soft: #143a31;
+    --r-aux: #8ab6ee; --r-aux-soft: #1b2c44; --r-est: #e6aa52; --r-est-soft: #3a2a12;
+    --ok: #63cf8c; --ok-soft: #173826; --warn: #e6aa52; --warn-soft: #3a2a12; --err: #f28b82; --err-soft: #43201d;
+    --guard: #9fb4f5; --guard-soft: #1e2847;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1513; --surface: #151f1c; --surface-2: #1c2926; --fg: #e2ebe8; --muted: #98a9a3; --line: #2a3a36;
+  --accent: #4cc2a3; --accent-fg: #052219; --accent-soft: #143a31;
+  --r-tit: #b8a0ee; --r-tit-soft: #2c2347; --r-adj: #4cc2a3; --r-adj-soft: #143a31;
+  --r-aux: #8ab6ee; --r-aux-soft: #1b2c44; --r-est: #e6aa52; --r-est-soft: #3a2a12;
+  --ok: #63cf8c; --ok-soft: #173826; --warn: #e6aa52; --warn-soft: #3a2a12; --err: #f28b82; --err-soft: #43201d;
+  --guard: #9fb4f5; --guard-soft: #1e2847;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.app { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: 1.6rem; font-weight: 800; }
+h2 { font-size: 1.2rem; font-weight: 700; }
+h3 { font-size: 1rem; font-weight: 700; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 0.82em; }
+.muted { color: var(--muted); }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Cabecera */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.cross { width: 34px; height: 34px; position: relative; flex: none; }
+.cross::before, .cross::after { content: ""; position: absolute; background: var(--accent); border-radius: 3px; }
+.cross::before { left: 11px; top: 0; width: 12px; height: 34px; }
+.cross::after { top: 11px; left: 0; height: 12px; width: 34px; }
+.brand p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+
+.tabs { display: grid; grid-template-columns: repeat(4, auto); gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 999px; }
+@media (max-width: 560px) { .tabs { width: 100%; grid-template-columns: repeat(4, 1fr); } .tabs button { padding-inline: 6px; } }
+.tabs button { border: 0; background: transparent; padding: 7px 16px; border-radius: 999px; cursor: pointer; font-weight: 500; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+
+/* Ahora */
+.now { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 12px 24px; align-items: start; }
+.now .label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.now .state { font-family: var(--f-display); font-size: 1.25rem; font-weight: 800; }
+.now .state .mono { white-space: nowrap; }
+.now .people { display: flex; flex-wrap: wrap; gap: 8px; }
+.who { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; background: var(--surface-2); font-size: 0.9rem; }
+@media (max-width: 640px) { .now { grid-template-columns: 1fr; } }
+
+/* Botones */
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-weight: 500; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--err); }
+.btn.danger.solid { background: var(--err); color: var(--surface); border-color: var(--err); }
+.btn.sm { padding: 4px 10px; font-size: 0.85rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.iconbtn { border: 0; background: transparent; cursor: pointer; color: var(--muted); width: 24px; height: 24px; border-radius: 6px; font-size: 1rem; line-height: 1; }
+.iconbtn:hover { background: var(--err-soft); color: var(--err); }
+
+/* Barra de semana */
+.weekbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; justify-content: space-between; }
+.weeknav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.weeknav .range { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; min-width: 12ch; text-align: center; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.err { background: var(--err-soft); color: var(--err); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.guard { background: var(--guard-soft); color: var(--guard); }
+
+/* Leyenda */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Rol */
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--c); }
+.role-titular { --c: var(--r-tit); --cs: var(--r-tit-soft); }
+.role-adjunto { --c: var(--r-adj); --cs: var(--r-adj-soft); }
+.role-auxiliar { --c: var(--r-aux); --cs: var(--r-aux-soft); }
+.role-estudiante { --c: var(--r-est); --cs: var(--r-est-soft); }
+.badge { display: inline-block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 1px 7px; border-radius: 5px; background: var(--cs); color: var(--c); white-space: nowrap; }
+
+/* Cuadrícula semanal */
+.week { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+.day { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; min-width: 0; }
+.day.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.day > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.day .dname { font-family: var(--f-display); font-weight: 700; }
+.day .ddate { color: var(--muted); font-size: 0.85rem; }
+.day .todaytag { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.day.closed { background: var(--surface-2); }
+.closedmsg { padding: 12px 14px; color: var(--muted); font-size: 0.9rem; }
+.guardline { margin: 0 14px 12px; padding: 8px 10px; border-radius: 8px; background: var(--guard-soft); color: var(--guard); font-size: 0.85rem; display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.guardline:first-of-type { margin-top: 12px; }
+.shift { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+.shift + .shift { border-top: 1px dashed var(--line); }
+.shift-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.shift-h strong { font-family: var(--f-display); font-size: 0.92rem; }
+.shift ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pp { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px; padding: 5px 4px 5px 8px; border-radius: 8px; background: var(--surface-2); border-left: 3px solid var(--c); }
+.pp .nm { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.pp .nm span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; font-size: 0.9rem; }
+.pp.gone { opacity: 0.6; text-decoration: line-through; }
+select.resp { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 2px 4px; font-size: 0.8rem; width: 118px; }
+.pp .badge { font-size: 0.64rem; padding: 1px 5px; }
+select.add { border: 1px dashed var(--line); background: transparent; border-radius: 8px; padding: 5px 8px; font-size: 0.85rem; color: var(--muted); width: 100%; cursor: pointer; }
+.issues { display: flex; flex-wrap: wrap; gap: 4px; }
+.issue { font-size: 0.76rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+.issue.err { background: var(--err-soft); color: var(--err); }
+.issue.warn { background: var(--warn-soft); color: var(--warn); }
+.issue.info { background: var(--surface-2); color: var(--muted); }
+
+/* Paneles */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.cols { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+.stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th { text-align: left; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td .rowact { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.person { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+
+form.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+.field input, .field select, .field textarea, td input, td select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 10px; width: 100%; min-width: 0; }
+textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; resize: vertical; }
+
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checks li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; }
+.checks .mark { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; }
+.checks .mark.ok { background: var(--ok-soft); color: var(--ok); }
+.checks .mark.err { background: var(--err-soft); color: var(--err); }
+
+.daychecks { display: flex; flex-wrap: wrap; gap: 6px; }
+.daychecks label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 0.88rem; }
+.note { font-size: 0.85rem; color: var(--muted); margin: 0; max-width: 70ch; }
+.banner { padding: 10px 14px; border-radius: var(--radius); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.banner.err { background: var(--err-soft); color: var(--err); }
+.banner.warn { background: var(--warn-soft); color: var(--warn); }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 0.9rem; max-width: calc(100vw - 32px); box-shadow: 0 6px 20px rgb(0 0 0 / 0.25); z-index: 20; }
+@media (prefers-reduced-motion: no-preference) { .toast { animation: rise .2s ease-out; } @keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } } }
+</style>
+</head><!--wrap-->
+<body><!--wrap-->
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <div class="cross" aria-hidden="true"></div>
+      <div>
+        <h1>Cuadrante de turnos</h1>
+        <p id="subtitle">Farmacia comunitaria</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button role="tab" data-tab="cuadrante" id="tab-cuadrante">Cuadrante</button>
+      <button role="tab" data-tab="equipo" id="tab-equipo">Equipo</button>
+      <button role="tab" data-tab="guardias" id="tab-guardias">Guardias</button>
+      <button role="tab" data-tab="ajustes" id="tab-ajustes">Ajustes</button>
+    </nav>
+  </div>
+  <section class="now" id="now" aria-live="polite"></section>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Constantes ----------
+  const KEY = 'farmacia-turnos-v1';
+  const ROLES = {
+    titular:    { label: 'Farmacéutica/o titular',   short: 'Titular',   abbr: 'TIT', pharm: true,  order: 1 },
+    adjunto:    { label: 'Farmacéutica/o adjunta/o', short: 'Adjunto',   abbr: 'ADJ', pharm: true,  order: 0 },
+    auxiliar:   { label: 'Auxiliar / técnico',       short: 'Auxiliar',  abbr: 'AUX', pharm: false, order: 2 },
+    estudiante: { label: 'Estudiante en prácticas',  short: 'Prácticas', abbr: 'PRÁ', pharm: false, order: 3 }
+  };
+  const RESP = {
+    mostrador: 'Mostrador',
+    admin: 'Administración',
+    gestion: 'Gestión',
+    practicas: 'Prácticas tutorizadas'
+  };
+  const SHIFTS = ['M', 'T'];
+  const SH_LABEL = { M: 'Mañana', T: 'Tarde' };
+  const PREF_LABEL = { M: 'Mañana', T: 'Tarde', X: 'Rotativo (alterna cada semana)' };
+  const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const PER_SHIFT = 3;
+
+  // ---------- Utilidades de fecha ----------
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const addDays = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; };
+  const mondayOf = d => addDays(d, -((d.getDay() + 6) % 7));
+  const todayKey = () => ymd(new Date());
+  const shortDate = d => d.getDate() + ' ' + MONTHS[d.getMonth()];
+  const longDate = d => DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  const weekIndex = monday => Math.floor(Math.round(monday.getTime() / 864e5 + 3) / 7);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Math.random().toString(36).slice(2, 10);
+
+  // ---------- Datos ----------
+  function seed() {
+    const today = new Date();
+    const since = ymd(addDays(today, -400));
+    const staff = [
+      { id: 's1', name: 'María Ortega',   role: 'titular',  shift: 'M' },
+      { id: 's2', name: 'Javier Morales', role: 'adjunto',  shift: 'M' },
+      { id: 's3', name: 'Elena Navarro',  role: 'adjunto',  shift: 'T' },
+      { id: 's4', name: 'Carmen Ruiz',    role: 'auxiliar', shift: 'M' },
+      { id: 's5', name: 'David Sánchez',  role: 'auxiliar', shift: 'T' },
+      { id: 's6', name: 'Laura Gómez',    role: 'auxiliar', shift: 'T' }
+    ].map(p => Object.assign(p, { active: true, since: since, until: null }));
+    const rota = ['s2', 's3', 's1'];
+    const guards = [];
+    for (let i = 0; i < 5; i++) {
+      const d = addDays(today, 2 + i * 6);
+      guards.push({ id: uid(), date: ymd(d), staffId: rota[i % 3], type: d.getDay() === 0 ? '24h' : 'noche' });
+    }
+    return { settings: { open: '09:00', days: [1, 2, 3, 4, 5, 6] }, staff, schedule: {}, guards };
+  }
+
+  let S = null;
+  try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  if (!S || !Array.isArray(S.staff)) S = seed();
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
+
+  const ui = { tab: 'cuadrante', week: mondayOf(new Date()), confirm: null, editing: null };
+  try { const t = localStorage.getItem(KEY + ':tab'); if (t) ui.tab = t; } catch (e) {}
+
+  // ---------- Helpers de dominio ----------
+  const byId = id => S.staff.find(p => p.id === id);
+  const isPharm = p => !!p && ROLES[p.role].pharm;
+  const activeStaff = () => S.staff.filter(p => p.active);
+  const activeOn = (p, key) => p.active || (p.until && key < p.until);
+  const firstName = id => { const p = byId(id); return p ? p.name.split(' ')[0] : '—'; };
+  const shortName = p => { const parts = p.name.trim().split(/\s+/); return parts.length > 1 ? parts[0] + ' ' + parts[1][0] + '.' : parts[0]; };
+  const openMin = () => { const [h, m] = S.settings.open.split(':').map(Number); return h * 60 + m; };
+  const times = sh => { const o = openMin(); return sh === 'M' ? [o, o + 360] : [o + 360, o + 720]; };
+  const hm = m => pad(Math.floor((m % 1440) / 60)) + ':' + pad(m % 60);
+  const range = sh => hm(times(sh)[0]) + '–' + hm(times(sh)[1]);
+  const isOpenDay = d => S.settings.days.includes(d.getDay());
+  const guardRange = g => g.type === '24h' ? '00:00–24:00' : hm(times('T')[1]) + '–' + hm(times('M')[0]);
+  const effPref = (p, monday) => p.shift === 'X' ? (weekIndex(monday) % 2 ? 'T' : 'M') : p.shift;
+  const roleBadge = p => '<span class="badge role-' + p.role + '">' + ROLES[p.role].short + '</span>';
+
+  // ---------- Generador de cuadrante ----------
+  function assignResp(people, seedIdx) {
+    const out = people.map(p => ({ id: p.id, resp: null }));
+    const ph = out.filter(a => isPharm(byId(a.id)))
+      .sort((a, b) => ROLES[byId(a.id).role].order - ROLES[byId(b.id).role].order);
+    // El primer farmacéutico (preferiblemente adjunto) supervisa el mostrador; el resto, gestión.
+    ph.forEach((a, k) => { a.resp = k === 0 ? 'mostrador' : 'gestion'; });
+    out.filter(a => byId(a.id).role === 'estudiante').forEach(a => { a.resp = 'practicas'; });
+    const aux = out.filter(a => !a.resp);
+    let counter = out.filter(a => a.resp === 'mostrador').length + aux.length;
+    const adminIdx = aux.length ? seedIdx % aux.length : -1;
+    aux.forEach((a, k) => {
+      // Siempre al menos 2 personas en mostrador; si sobra una, pasa a administración (rota por día).
+      if (k === adminIdx && counter - 1 >= 2) { a.resp = 'admin'; counter--; } else a.resp = 'mostrador';
+    });
+    return out;
+  }
+
+  function generateWeek(monday) {
+    const today = todayKey();
+    const act = activeStaff();
+    const hours = {};
+    let changed = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(monday, i), key = ymd(d);
+      const existing = S.schedule[key];
+      // No se reescriben días pasados que ya tienen cuadrante.
+      if (key < today && existing) {
+        SHIFTS.forEach(sh => (existing[sh] || []).forEach(a => { hours[a.id] = (hours[a.id] || 0) + 6; }));
+        continue;
+      }
+      if (!isOpenDay(d)) { delete S.schedule[key]; continue; }
+      const day = { M: [], T: [] };
+      const used = new Set();
+      // Quien sale de guardia la noche anterior no entra de mañana si se puede evitar.
+      const offGuard = new Set(S.guards.filter(g => g.date === ymd(addDays(d, -1))).map(g => g.staffId));
+      SHIFTS.forEach(sh => {
+        const score = p => {
+          const pref = effPref(p, monday);
+          return (pref === sh ? 0 : 2000) + (used.has(p.id) ? 10000 : 0) +
+                 (sh === 'M' && offGuard.has(p.id) ? 4000 : 0) + (hours[p.id] || 0);
+        };
+        const pick = pool => pool.slice().sort((a, b) => score(a) - score(b) || ROLES[a.role].order - ROLES[b.role].order)[0];
+        const list = [];
+        const ph = pick(act.filter(isPharm));
+        if (ph) list.push(ph);
+        while (list.length < PER_SHIFT) {
+          const c = pick(act.filter(p => p.role !== 'estudiante' && !list.includes(p)));
+          if (!c) break;
+          list.push(c);
+        }
+        act.filter(p => p.role === 'estudiante' && !used.has(p.id) && effPref(p, monday) === sh)
+          .forEach(p => list.push(p));
+        list.forEach(p => { used.add(p.id); hours[p.id] = (hours[p.id] || 0) + 6; });
+        day[sh] = assignResp(list, i + (sh === 'T' ? 1 : 0));
+      });
+      S.schedule[key] = day;
+      changed++;
+    }
+    save();
+    return changed;
+  }
+
+  function weekHasData(monday) {
+    for (let i = 0; i < 7; i++) if (S.schedule[ymd(addDays(monday, i))]) return true;
+    return false;
+  }
+
+  // ---------- Validación ----------
+  function shiftIssues(key, sh) {
+    const day = S.schedule[key];
+    const list = (day && day[sh]) || [];
+    const out = [];
+    const people = list.map(a => byId(a.id)).filter(Boolean);
+    const valid = people.filter(p => activeOn(p, key));
+    const count = valid.filter(p => p.role !== 'estudiante').length;
+    if (!valid.some(isPharm)) out.push({ lvl: 'err', t: 'Sin farmacéutico' });
+    if (count < PER_SHIFT) out.push({ lvl: 'err', t: 'Falta' + (PER_SHIFT - count > 1 ? 'n ' : ' ') + (PER_SHIFT - count) + (PER_SHIFT - count > 1 ? ' personas' : ' persona') });
+    if (count > PER_SHIFT) out.push({ lvl: 'info', t: 'Refuerzo: ' + count + ' personas' });
+    if (valid.length && !list.some(a => a.resp === 'mostrador' && byId(a.id) && activeOn(byId(a.id), key))) out.push({ lvl: 'warn', t: 'Nadie en mostrador' });
+    people.filter(p => !activeOn(p, key)).forEach(p => out.push({ lvl: 'err', t: shortName(p) + ' está de baja' }));
+    const other = (day && day[sh === 'M' ? 'T' : 'M']) || [];
+    valid.forEach(p => { if (other.some(a => a.id === p.id)) out.push({ lvl: 'warn', t: shortName(p) + ' dobla turno (12 h)' }); });
+    if (sh === 'M') {
+      const prev = ymd(addDays(parse(key), -1));
+      S.guards.filter(g => g.date === prev && list.some(a => a.id === g.staffId))
+        .forEach(g => out.push({ lvl: 'warn', t: firstName(g.staffId) + ' sale de guardia' }));
+    }
+    return out;
+  }
+
+  function weekIssueCount(monday) {
+    let err = 0, warn = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(monday, i), key = ymd(d);
+      if (!isOpenDay(d) && !S.schedule[key]) continue;
+      SHIFTS.forEach(sh => shiftIssues(key, sh).forEach(x => { if (x.lvl === 'err') err++; else if (x.lvl === 'warn') warn++; }));
+    }
+    return { err, warn };
+  }
+
+  // ---------- Render: estado actual ----------
+  function renderNow() {
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const key = ymd(now);
+    let label = 'Ahora · ' + hm(mins), state, people = '';
+    const guardTonight = S.guards.find(g => g.date === key);
+    const guardYesterday = S.guards.find(g => g.date === ymd(addDays(now, -1)) && g.type === 'noche');
+    const shiftNow = SHIFTS.find(sh => { const [a, b] = times(sh); return mins >= a && mins < b; });
+    const day = S.schedule[key];
+    if (isOpenDay(now) && shiftNow && day) {
+      state = 'Turno de ' + SH_LABEL[shiftNow].toLowerCase() + ' <span class="mono muted">' + range(shiftNow) + '</span>';
+      people = (day[shiftNow] || []).map(a => {
+        const p = byId(a.id); if (!p) return '';
+        return '<span class="who role-' + p.role + '"><span class="dot"></span><strong>' + esc(p.name) + '</strong> ' + roleBadge(p) + ' <span class="muted">' + RESP[a.resp] + '</span></span>';
+      }).join('');
+    } else if (guardTonight && (guardTonight.type === '24h' || mins >= times('T')[1])) {
+      state = 'Farmacia de guardia <span class="mono muted">' + guardRange(guardTonight) + '</span>';
+      people = guardPerson(guardTonight);
+    } else if (guardYesterday && mins < times('M')[0]) {
+      state = 'Farmacia de guardia <span class="mono muted">' + guardRange(guardYesterday) + '</span>';
+      people = guardPerson(guardYesterday);
+    } else {
+      state = 'Cerrado';
+      people = '<span class="muted">' + nextOpening(now) + '</span>';
+    }
+    document.getElementById('now').innerHTML =
+      '<div><div class="label">' + label + '</div><div class="state">' + state + '</div></div>' +
+      '<div class="people">' + people + '</div>';
+    document.getElementById('subtitle').textContent =
+      'Abierto ' + hm(times('M')[0]) + '–' + hm(times('T')[1]) + ' · 12 h · ' + PER_SHIFT + ' personas por turno, siempre con farmacéutico';
+  }
+  function guardPerson(g) {
+    const p = byId(g.staffId);
+    return p ? '<span class="who role-' + p.role + '"><span class="dot"></span><strong>' + esc(p.name) + '</strong> ' + roleBadge(p) + ' <span class="muted">Farmacéutico de guardia</span></span>'
+             : '<span class="issue err">Guardia sin farmacéutico asignado</span>';
+  }
+  function nextOpening(now) {
+    const mins = now.getHours() * 60 + now.getMinutes();
+    for (let i = 0; i < 8; i++) {
+      const d = addDays(now, i);
+      if (!isOpenDay(d)) continue;
+      if (i === 0 && mins >= times('M')[0]) continue;
+      return 'Próxima apertura: ' + (i === 0 ? 'hoy' : i === 1 ? 'mañana' : DAYS[d.getDay()].toLowerCase()) + ' a las ' + hm(times('M')[0]);
+    }
+    return 'No hay días de apertura configurados';
+  }
+
+  // ---------- Render: cuadrante ----------
+  function renderCuadrante() {
+    const monday = ui.week;
+    if (!weekHasData(monday) && ymd(addDays(monday, 6)) >= todayKey()) generateWeek(monday);
+    const sunday = addDays(monday, 6);
+    const rangeTxt = monday.getMonth() === sunday.getMonth()
+      ? monday.getDate() + '–' + sunday.getDate() + ' ' + MONTHS[sunday.getMonth()] + ' ' + sunday.getFullYear()
+      : shortDate(monday) + ' – ' + shortDate(sunday) + ' ' + sunday.getFullYear();
+    const ic = weekIssueCount(monday);
+    const status = ic.err ? '<span class="pill err">' + ic.err + (ic.err > 1 ? ' turnos con problemas' : ' turno con problemas') + '</span>'
+      : ic.warn ? '<span class="pill warn">' + ic.warn + (ic.warn > 1 ? ' avisos' : ' aviso') + '</span>'
+      : '<span class="pill ok">✓ Todos los turnos cubiertos</span>';
+    const regen = ui.confirm === 'regen'
+      ? '<span class="muted" style="font-size:.85rem">Se sustituyen los cambios manuales desde hoy.</span><button class="btn primary sm" data-act="regen-yes">Generar</button><button class="btn sm" data-act="cancel">Cancelar</button>'
+      : '<button class="btn primary" data-act="regen">Generar cuadrante</button>';
+
+    let html = '<div class="stack">' +
+      '<div class="weekbar">' +
+        '<div class="weeknav">' +
+          '<button class="btn" data-act="prev" aria-label="Semana anterior">‹</button>' +
+          '<span class="range">' + rangeTxt + '</span>' +
+          '<button class="btn" data-act="next" aria-label="Semana siguiente">›</button>' +
+          '<button class="btn sm" data-act="thisweek">Esta semana</button>' +
+          status +
+        '</div>' +
+        '<div class="actions">' + regen + '</div>' +
+      '</div>' +
+      '<div class="legend">' +
+        Object.keys(ROLES).map(r => '<span class="role-' + r + '"><span class="dot"></span>' + ROLES[r].label + '</span>').join('') +
+        '<span><span class="pill guard" style="padding:0 8px">G</span> Guardia</span>' +
+      '</div>' +
+      '<div class="week">';
+
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(monday, i), key = ymd(d);
+      const guards = S.guards.filter(g => g.date === key);
+      const isToday = key === todayKey();
+      const guardHtml = guards.map(g => '<div class="guardline"><strong>Guardia</strong><span>' + esc(byId(g.staffId) ? byId(g.staffId).name : 'Sin asignar') + ' · <span class="mono">' + guardRange(g) + '</span></span></div>').join('');
+      const head = '<header><span><span class="dname">' + DAYS[d.getDay()] + '</span> <span class="ddate">' + shortDate(d) + '</span></span>' + (isToday ? '<span class="todaytag">Hoy</span>' : '') + '</header>';
+      if (!isOpenDay(d) && !S.schedule[key]) {
+        html += '<article class="day closed' + (isToday ? ' today' : '') + '">' + head + guardHtml + (guards.length ? '' : '<div class="closedmsg">Cerrado</div>') + '</article>';
+        continue;
+      }
+      html += '<article class="day' + (isToday ? ' today' : '') + '">' + head + guardHtml;
+      SHIFTS.forEach(sh => {
+        const list = (S.schedule[key] && S.schedule[key][sh]) || [];
+        const iss = shiftIssues(key, sh);
+        const ok = !iss.some(x => x.lvl === 'err');
+        html += '<section class="shift"><div class="shift-h"><strong>' + SH_LABEL[sh] + ' <span class="mono muted">' + range(sh) + '</span></strong>' +
+          '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + PER_SHIFT + '</span></div><ul>';
+        list.forEach(a => {
+          const p = byId(a.id); if (!p) return;
+          html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '"><span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span>' + esc(shortName(p)) + '</span><span class="badge role-' + p.role + '">' + ROLES[p.role].abbr + '</span></span>' +
+            '<select class="resp" data-act="resp" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Responsabilidad de ' + esc(p.name) + '">' +
+            Object.keys(RESP).map(r => '<option value="' + r + '"' + (r === a.resp ? ' selected' : '') + '>' + RESP[r] + '</option>').join('') + '</select>' +
+            '<button class="iconbtn" data-act="rm" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Quitar a ' + esc(p.name) + ' del turno">×</button></li>';
+        });
+        html += '</ul>';
+        if (iss.length) html += '<div class="issues">' + iss.map(x => '<span class="issue ' + x.lvl + '">' + esc(x.t) + '</span>').join('') + '</div>';
+        const avail = activeStaff().filter(p => !list.some(a => a.id === p.id));
+        if (avail.length) {
+          html += '<select class="add" data-act="add" data-key="' + key + '" data-sh="' + sh + '" aria-label="Añadir persona al turno de ' + SH_LABEL[sh].toLowerCase() + '"><option value="">+ Añadir persona…</option>' +
+            avail.map(p => '<option value="' + p.id + '">' + esc(p.name) + ' (' + ROLES[p.role].short + ')</option>').join('') + '</select>';
+        }
+        html += '</section>';
+      });
+      html += '</article>';
+    }
+    html += '</div>' + renderWeekSummary(monday) + '</div>';
+    return html;
+  }
+
+  function renderWeekSummary(monday) {
+    const rows = {};
+    for (let i = 0; i < 7; i++) {
+      const key = ymd(addDays(monday, i));
+      const day = S.schedule[key]; if (!day) continue;
+      SHIFTS.forEach(sh => (day[sh] || []).forEach(a => {
+        const r = rows[a.id] || (rows[a.id] = { M: 0, T: 0, mostrador: 0, admin: 0, gestion: 0, practicas: 0 });
+        r[sh]++; r[a.resp]++;
+      }));
+    }
+    const people = S.staff.filter(p => p.active || rows[p.id])
+      .sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
+    const guardsWeek = id => S.guards.filter(g => g.staffId === id && g.date >= ymd(monday) && g.date <= ymd(addDays(monday, 6))).length;
+    return '<section class="panel"><div class="panel-h"><h2>Resumen de la semana</h2><span class="muted" style="font-size:.85rem">Cada turno son 6 horas</span></div>' +
+      '<div class="tablewrap"><table><thead><tr><th>Persona</th><th>Rol</th><th class="num">Mañanas</th><th class="num">Tardes</th><th class="num">Horas</th><th class="num">Mostrador</th><th class="num">Admin.</th><th class="num">Gestión</th><th class="num">Guardias</th></tr></thead><tbody>' +
+      people.map(p => {
+        const r = rows[p.id] || { M: 0, T: 0, mostrador: 0, admin: 0, gestion: 0, practicas: 0 };
+        return '<tr><td><span class="person role-' + p.role + '"><span class="dot"></span>' + esc(p.name) + (p.active ? '' : ' <span class="muted">(baja)</span>') + '</span></td><td>' + roleBadge(p) + '</td>' +
+          '<td class="num">' + r.M + '</td><td class="num">' + r.T + '</td><td class="num"><strong>' + (r.M + r.T) * 6 + ' h</strong></td>' +
+          '<td class="num">' + r.mostrador + '</td><td class="num">' + r.admin + '</td><td class="num">' + r.gestion + '</td><td class="num">' + guardsWeek(p.id) + '</td></tr>';
+      }).join('') + '</tbody></table></div></section>';
+  }
+
+  // ---------- Render: equipo ----------
+  function staffChecks() {
+    const act = activeStaff();
+    const adj = act.filter(p => p.role === 'adjunto').length;
+    const ph = act.filter(isPharm).length;
+    const team = act.filter(p => p.role !== 'estudiante').length;
+    const prefM = act.filter(p => isPharm(p) && p.shift === 'M').length;
+    const prefT = act.filter(p => isPharm(p) && p.shift === 'T').length;
+    return [
+      { ok: adj >= 1, t: 'Farmacéuticos adjuntos en plantilla: <strong>' + adj + '</strong> (mínimo 1)' },
+      { ok: ph >= 2, t: 'Farmacéuticos para cubrir mañana y tarde: <strong>' + ph + '</strong> (mínimo 2 sin doblar turno)' },
+      { ok: team >= PER_SHIFT * 2, t: 'Personas para ' + PER_SHIFT + ' + ' + PER_SHIFT + ' sin doblar turno: <strong>' + team + '</strong> (mínimo ' + PER_SHIFT * 2 + ')' },
+      { ok: prefM >= 1 && prefT >= 1, t: 'Un farmacéutico con turno fijo de mañana y otro de tarde: <strong>' + (prefM >= 1 ? 'mañana ✓' : 'falta mañana') + ' · ' + (prefT >= 1 ? 'tarde ✓' : 'falta tarde') + '</strong>' }
+    ];
+  }
+
+  function renderEquipo() {
+    const act = activeStaff().sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
+    const gone = S.staff.filter(p => !p.active);
+    const monday = mondayOf(new Date());
+    const hoursWeek = id => {
+      let h = 0;
+      for (let i = 0; i < 7; i++) { const day = S.schedule[ymd(addDays(monday, i))]; if (day) SHIFTS.forEach(sh => { if ((day[sh] || []).some(a => a.id === id)) h += 6; }); }
+      return h;
+    };
+    const roleOpts = sel => Object.keys(ROLES).map(r => '<option value="' + r + '"' + (r === sel ? ' selected' : '') + '>' + ROLES[r].label + '</option>').join('');
+    const prefOpts = sel => Object.keys(PREF_LABEL).map(s => '<option value="' + s + '"' + (s === sel ? ' selected' : '') + '>' + PREF_LABEL[s] + '</option>').join('');
+
+    const rows = act.map(p => {
+      if (ui.editing === p.id) {
+        return '<tr><td><input id="ed-name" value="' + esc(p.name) + '" aria-label="Nombre"></td>' +
+          '<td><select id="ed-role" aria-label="Rol">' + roleOpts(p.role) + '</select></td>' +
+          '<td><select id="ed-shift" aria-label="Turno habitual">' + prefOpts(p.shift) + '</select></td><td></td><td></td>' +
+          '<td><div class="rowact"><button class="btn primary sm" data-act="ed-save" data-id="' + p.id + '">Guardar</button><button class="btn sm" data-act="cancel">Cancelar</button></div></td></tr>';
+      }
+      const confirming = ui.confirm === 'baja:' + p.id;
+      return '<tr><td><span class="person role-' + p.role + '"><span class="dot"></span>' + esc(p.name) + '</span></td>' +
+        '<td>' + roleBadge(p) + '</td><td>' + PREF_LABEL[p.shift].split(' (')[0] + '</td>' +
+        '<td class="mono muted">' + shortDate(parse(p.since)) + ' ' + p.since.slice(0, 4) + '</td>' +
+        '<td class="num">' + hoursWeek(p.id) + ' h</td>' +
+        '<td><div class="rowact">' + (confirming
+          ? '<span class="muted" style="font-size:.85rem">¿Dar de baja?</span><button class="btn danger solid sm" data-act="baja-yes" data-id="' + p.id + '">Sí, dar de baja</button><button class="btn sm" data-act="cancel">No</button>'
+          : '<button class="btn sm" data-act="edit" data-id="' + p.id + '">Editar</button>' + (p.role === 'titular' ? '' : '<button class="btn danger sm" data-act="baja" data-id="' + p.id + '">Dar de baja</button>')) +
+        '</div></td></tr>';
+    }).join('');
+
+    const goneRows = gone.map(p => '<tr><td><span class="person role-' + p.role + '"><span class="dot"></span>' + esc(p.name) + '</span></td><td>' + roleBadge(p) + '</td>' +
+      '<td class="mono muted">' + (p.until ? shortDate(parse(p.until)) + ' ' + p.until.slice(0, 4) : '—') + '</td>' +
+      '<td><div class="rowact"><button class="btn sm" data-act="alta-again" data-id="' + p.id + '">Volver a dar de alta</button></div></td></tr>').join('');
+
+    const checks = staffChecks();
+    return '<div class="cols">' +
+      '<div class="stack">' +
+        '<section class="panel"><div class="panel-h"><h2>Dar de alta</h2></div>' +
+          '<form class="grid" id="alta-form" autocomplete="off">' +
+            '<div class="field"><label for="alta-name">Nombre y apellidos</label><input id="alta-name" required placeholder="p. ej. Pablo Torres"></div>' +
+            '<div class="field"><label for="alta-role">Rol</label><select id="alta-role">' + roleOpts('auxiliar') + '</select></div>' +
+            '<div class="field"><label for="alta-shift">Turno habitual</label><select id="alta-shift">' + prefOpts('M') + '</select></div>' +
+            '<button class="btn primary" type="submit">Dar de alta</button>' +
+          '</form>' +
+          '<p class="note">Los estudiantes en prácticas van como refuerzo tutorizado: no cuentan para las ' + PER_SHIFT + ' personas mínimas del turno.</p>' +
+        '</section>' +
+        '<section class="panel"><div class="panel-h"><h2>Equipo en activo</h2><span class="muted" style="font-size:.85rem">' + act.length + ' personas · horas de esta semana</span></div>' +
+          '<div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Turno habitual</th><th>Alta</th><th class="num">Horas</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '</section>' +
+        (gone.length ? '<section class="panel"><div class="panel-h"><h2>Bajas</h2></div><div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Fecha de baja</th><th></th></tr></thead><tbody>' + goneRows + '</tbody></table></div></section>' : '') +
+      '</div>' +
+      '<section class="panel"><h2>Requisitos de plantilla</h2><ul class="checks">' +
+        checks.map(c => '<li><span class="mark ' + (c.ok ? 'ok' : 'err') + '">' + (c.ok ? '✓' : '!') + '</span><span>' + c.t + '</span></li>').join('') +
+      '</ul><p class="note">No se puede dar de baja al último farmacéutico adjunto ni a la titular. El cuadrante se genera con el turno habitual de cada persona y reparte mostrador, administración y gestión.</p></section>' +
+    '</div>';
+  }
+
+  // ---------- Render: guardias ----------
+  function renderGuardias() {
+    const today = todayKey();
+    const ph = activeStaff().filter(isPharm);
+    const upcoming = S.guards.filter(g => g.date >= ymd(addDays(new Date(), -1))).sort((a, b) => a.date.localeCompare(b.date));
+    const past = S.guards.filter(g => g.date < ymd(addDays(new Date(), -1)));
+    const year = String(new Date().getFullYear());
+    const counts = ph.map(p => ({ p, n: S.guards.filter(g => g.staffId === p.id && g.date.slice(0, 4) === year).length }));
+    const phOpts = sel => '<option value="">Sin asignar</option>' + S.staff.filter(p => isPharm(p) && (p.active || p.id === sel))
+      .map(p => '<option value="' + p.id + '"' + (p.id === sel ? ' selected' : '') + '>' + esc(p.name) + (p.active ? '' : ' (baja)') + '</option>').join('');
+
+    const rows = upcoming.map(g => {
+      const p = byId(g.staffId);
+      const warn = !p ? '<span class="issue err">Sin farmacéutico</span>' : !p.active ? '<span class="issue err">Está de baja</span>' : '';
+      return '<tr><td><strong>' + longDate(parse(g.date)) + '</strong>' + (g.date === today ? ' <span class="pill guard">Hoy</span>' : '') + '</td>' +
+        '<td><select data-act="g-type" data-id="' + g.id + '" aria-label="Tipo de guardia"><option value="noche"' + (g.type === 'noche' ? ' selected' : '') + '>Nocturna</option><option value="24h"' + (g.type === '24h' ? ' selected' : '') + '>24 horas</option></select></td>' +
+        '<td class="mono">' + guardRange(g) + '</td>' +
+        '<td><select data-act="g-staff" data-id="' + g.id + '" aria-label="Farmacéutico de guardia">' + phOpts(g.staffId) + '</select> ' + warn + '</td>' +
+        '<td><div class="rowact"><button class="btn danger sm" data-act="g-del" data-id="' + g.id + '">Eliminar</button></div></td></tr>';
+    }).join('') || '<tr><td colspan="5" class="muted">No hay guardias programadas. Añade la primera con el formulario.</td></tr>';
+
+    return '<div class="cols">' +
+      '<div class="stack">' +
+        '<section class="panel"><div class="panel-h"><h2>Añadir guardia</h2></div>' +
+          '<form class="grid" id="guard-form">' +
+            '<div class="field"><label for="g-date">Fecha</label><input type="date" id="g-date" required value="' + ymd(addDays(new Date(), 1)) + '"></div>' +
+            '<div class="field"><label for="g-type">Tipo</label><select id="g-type"><option value="noche">Nocturna (' + hm(times('T')[1]) + '–' + hm(times('M')[0]) + ')</option><option value="24h">24 horas (festivo o domingo)</option></select></div>' +
+            '<div class="field"><label for="g-staff">Farmacéutico</label><select id="g-staff"><option value="auto">Reparto automático</option>' + ph.map(p => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('') + '</select></div>' +
+            '<button class="btn primary" type="submit">Añadir guardia</button>' +
+          '</form>' +
+          '<p class="note">El reparto automático elige al farmacéutico con menos guardias este año y evita a quien ya trabaja de tarde ese día. Quien sale de guardia no entra de mañana al día siguiente al generar el cuadrante.</p>' +
+        '</section>' +
+        '<section class="panel"><div class="panel-h"><h2>Próximas guardias</h2>' + (past.length ? '<span class="muted" style="font-size:.85rem">' + past.length + ' guardias anteriores guardadas</span>' : '') + '</div>' +
+          '<div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Horario</th><th>Farmacéutico</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '</section>' +
+      '</div>' +
+      '<section class="panel"><h2>Reparto ' + year + '</h2><div class="tablewrap"><table><tbody>' +
+        counts.map(c => '<tr><td><span class="person role-' + c.p.role + '"><span class="dot"></span>' + esc(c.p.name) + '</span></td><td class="num"><strong>' + c.n + '</strong> ' + (c.n === 1 ? 'guardia' : 'guardias') + '</td></tr>').join('') +
+      '</tbody></table></div><p class="note">Solo pueden hacer guardia la titular y los farmacéuticos adjuntos.</p></section>' +
+    '</div>';
+  }
+
+  function autoGuardPharmacist(date) {
+    const ph = activeStaff().filter(isPharm);
+    if (!ph.length) return null;
+    const year = date.slice(0, 4);
+    const day = S.schedule[date];
+    const score = p => S.guards.filter(g => g.staffId === p.id && g.date.slice(0, 4) === year).length * 10 +
+      (day && (day.T || []).some(a => a.id === p.id) ? 5 : 0) + ROLES[p.role].order;
+    return ph.slice().sort((a, b) => score(a) - score(b))[0].id;
+  }
+
+  // ---------- Render: ajustes ----------
+  function renderAjustes() {
+    const openOpts = [];
+    for (let m = 6 * 60; m <= 11 * 60; m += 30) openOpts.push(hm(m));
+    const order = [1, 2, 3, 4, 5, 6, 0];
+    const reset = ui.confirm === 'reset'
+      ? '<span class="muted" style="font-size:.85rem">Se borrarán el equipo, los cuadrantes y las guardias.</span><button class="btn danger solid sm" data-act="reset-yes">Sí, restaurar</button><button class="btn sm" data-act="cancel">Cancelar</button>'
+      : '<button class="btn danger" data-act="reset">Restaurar datos de ejemplo</button>';
+    return '<div class="cols">' +
+      '<div class="stack">' +
+        '<section class="panel"><h2>Horario de apertura</h2>' +
+          '<div class="field" style="max-width:260px"><label for="set-open">Hora de apertura (12 h seguidas)</label><select id="set-open" data-act="set-open">' +
+            openOpts.map(o => '<option' + (o === S.settings.open ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></div>' +
+          '<p class="note">Mañana <span class="mono">' + range('M') + '</span> · Tarde <span class="mono">' + range('T') + '</span> · Guardia nocturna <span class="mono">' + hm(times('T')[1]) + '–' + hm(times('M')[0]) + '</span></p>' +
+          '<div class="field"><label>Días de apertura</label><div class="daychecks">' +
+            order.map(d => '<label><input type="checkbox" data-act="set-day" value="' + d + '"' + (S.settings.days.includes(d) ? ' checked' : '') + '> ' + DAYS[d] + '</label>').join('') +
+          '</div></div>' +
+          '<p class="note">Los cambios de horario se aplican al generar de nuevo el cuadrante.</p>' +
+        '</section>' +
+        '<section class="panel"><h2>Copia de seguridad</h2>' +
+          '<p class="note">Los datos se guardan en este navegador. Copia este texto para guardarlo o pasarlo a otro ordenador, y pégalo aquí para recuperarlo.</p>' +
+          '<div class="field"><label for="data-box">Datos de la farmacia</label><textarea id="data-box" spellcheck="false">' + esc(JSON.stringify(S)) + '</textarea></div>' +
+          '<div class="actions"><button class="btn" data-act="copy">Copiar datos</button><button class="btn" data-act="import">Cargar datos pegados</button></div>' +
+        '</section>' +
+      '</div>' +
+      '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo de ejemplo (titular, dos adjuntos y tres auxiliares).</p><div class="actions">' + reset + '</div></section>' +
+    '</div>';
+  }
+
+  // ---------- Render principal ----------
+  function render() {
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
+    if (!weekHasData(mondayOf(new Date()))) generateWeek(mondayOf(new Date()));
+    renderNow();
+    const views = { cuadrante: renderCuadrante, equipo: renderEquipo, guardias: renderGuardias, ajustes: renderAjustes };
+    document.getElementById('main').innerHTML = (views[ui.tab] || renderCuadrante)();
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 3800);
+  }
+
+  // ---------- Acciones ----------
+  function canRemove(p) {
+    if (p.role === 'titular') return 'La titular no se puede dar de baja.';
+    if (p.role === 'adjunto' && activeStaff().filter(x => x.role === 'adjunto').length <= 1)
+      return 'Siempre tiene que haber al menos un farmacéutico adjunto. Da de alta a otro antes de esta baja.';
+    return null;
+  }
+
+  function doBaja(id) {
+    const p = byId(id);
+    p.active = false; p.until = todayKey();
+    const today = todayKey();
+    Object.keys(S.schedule).forEach(k => {
+      if (k < today) return;
+      SHIFTS.forEach(sh => { S.schedule[k][sh] = (S.schedule[k][sh] || []).filter(a => a.id !== id); });
+    });
+    // Reasigna sus guardias futuras.
+    S.guards.forEach(g => { if (g.staffId === id && g.date >= today) g.staffId = autoGuardPharmacist(g.date); });
+    // Rellena los turnos que quedan cortos a partir de hoy.
+    const weeks = new Set(Object.keys(S.schedule).filter(k => k >= today).map(k => ymd(mondayOf(parse(k)))));
+    weeks.forEach(w => generateWeek(parse(w)));
+    save();
+    toast(p.name + ' dada/o de baja. Turnos y guardias pendientes reasignados.');
+  }
+
+  document.addEventListener('click', e => {
+    const tab = e.target.closest('[data-tab]');
+    if (tab) {
+      ui.tab = tab.dataset.tab; ui.confirm = null; ui.editing = null;
+      try { localStorage.setItem(KEY + ':tab', ui.tab); } catch (err) {}
+      render(); return;
+    }
+    const el = e.target.closest('button[data-act]');
+    if (!el) return;
+    const act = el.dataset.act, id = el.dataset.id;
+    switch (act) {
+      case 'prev': ui.week = addDays(ui.week, -7); ui.confirm = null; break;
+      case 'next': ui.week = addDays(ui.week, 7); ui.confirm = null; break;
+      case 'thisweek': ui.week = mondayOf(new Date()); break;
+      case 'regen': ui.confirm = 'regen'; break;
+      case 'regen-yes': generateWeek(ui.week); ui.confirm = null; toast('Cuadrante generado para la semana.'); break;
+      case 'cancel': ui.confirm = null; ui.editing = null; break;
+      case 'rm': {
+        const day = S.schedule[el.dataset.key];
+        day[el.dataset.sh] = day[el.dataset.sh].filter(a => a.id !== id);
+        save(); break;
+      }
+      case 'baja': {
+        const why = canRemove(byId(id));
+        if (why) { toast(why); return; }
+        ui.confirm = 'baja:' + id; break;
+      }
+      case 'baja-yes': ui.confirm = null; doBaja(id); break;
+      case 'alta-again': {
+        const p = byId(id);
+        p.active = true; p.until = null; p.since = todayKey();
+        save(); toast(p.name + ' vuelve a estar de alta. Pulsa «Generar cuadrante» para incluirla/o.'); break;
+      }
+      case 'edit': ui.editing = id; ui.confirm = null; break;
+      case 'ed-save': {
+        const p = byId(id);
+        const name = document.getElementById('ed-name').value.trim();
+        const role = document.getElementById('ed-role').value;
+        if (!name) { toast('Escribe un nombre.'); return; }
+        if (p.role === 'adjunto' && role !== 'adjunto' && activeStaff().filter(x => x.role === 'adjunto').length <= 1) {
+          toast('Es el único farmacéutico adjunto: no puede cambiar de rol.'); return;
+        }
+        if (role === 'titular' && p.role !== 'titular' && S.staff.some(x => x.active && x.role === 'titular')) {
+          toast('Ya hay una persona titular.'); return;
+        }
+        if (p.role === 'titular' && role !== 'titular') { toast('La titular no puede cambiar de rol.'); return; }
+        p.name = name; p.role = role; p.shift = document.getElementById('ed-shift').value;
+        ui.editing = null; save(); toast('Datos actualizados.'); break;
+      }
+      case 'g-del': S.guards = S.guards.filter(g => g.id !== id); save(); toast('Guardia eliminada.'); break;
+      case 'reset': ui.confirm = 'reset'; break;
+      case 'reset-yes': S = seed(); ui.confirm = null; save(); toast('Datos de ejemplo restaurados.'); break;
+      case 'copy': {
+        const box = document.getElementById('data-box');
+        const fallback = () => { box.focus(); box.select(); toast('Texto seleccionado: cópialo con Ctrl+C.'); };
+        try { navigator.clipboard.writeText(box.value).then(() => toast('Datos copiados.'), fallback); } catch (err) { fallback(); }
+        return;
+      }
+      case 'import': {
+        try {
+          const d = JSON.parse(document.getElementById('data-box').value);
+          if (!Array.isArray(d.staff) || !d.settings) throw new Error('formato');
+          d.schedule = d.schedule || {}; d.guards = d.guards || [];
+          S = d; save(); toast('Datos cargados.');
+        } catch (err) { toast('El texto pegado no son datos válidos de la aplicación.'); return; }
+        break;
+      }
+      default: return;
+    }
+    render();
+  });
+
+  document.addEventListener('change', e => {
+    const el = e.target;
+    const act = el.dataset.act;
+    if (!act) return;
+    if (act === 'resp') {
+      const a = S.schedule[el.dataset.key][el.dataset.sh].find(x => x.id === el.dataset.id);
+      a.resp = el.value;
+    } else if (act === 'add') {
+      if (!el.value) return;
+      const p = byId(el.value);
+      const day = S.schedule[el.dataset.key] || (S.schedule[el.dataset.key] = { M: [], T: [] });
+      const list = day[el.dataset.sh];
+      const hasCounter = list.some(x => x.resp === 'mostrador');
+      list.push({ id: p.id, resp: p.role === 'estudiante' ? 'practicas' : hasCounter && !isPharm(p) ? 'mostrador' : (isPharm(p) && list.some(x => isPharm(byId(x.id))) ? 'gestion' : 'mostrador') });
+    } else if (act === 'g-staff') {
+      S.guards.find(g => g.id === el.dataset.id).staffId = el.value || null;
+    } else if (act === 'g-type') {
+      S.guards.find(g => g.id === el.dataset.id).type = el.value;
+    } else if (act === 'set-open') {
+      S.settings.open = el.value;
+    } else if (act === 'set-day') {
+      const v = Number(el.value);
+      S.settings.days = el.checked ? S.settings.days.concat(v) : S.settings.days.filter(x => x !== v);
+    } else return;
+    save(); render();
+  });
+
+  document.addEventListener('submit', e => {
+    e.preventDefault();
+    if (e.target.id === 'alta-form') {
+      const name = document.getElementById('alta-name').value.trim();
+      const role = document.getElementById('alta-role').value;
+      if (!name) { toast('Escribe el nombre de la persona.'); return; }
+      if (role === 'titular' && S.staff.some(p => p.active && p.role === 'titular')) { toast('Ya hay una persona titular en la farmacia.'); return; }
+      S.staff.push({ id: uid(), name, role, shift: document.getElementById('alta-shift').value, active: true, since: todayKey(), until: null });
+      save(); render();
+      toast(name + ' dada/o de alta como ' + ROLES[role].label.toLowerCase() + '. Pulsa «Generar cuadrante» para incluirla/o.');
+    } else if (e.target.id === 'guard-form') {
+      const date = document.getElementById('g-date').value;
+      if (!date) { toast('Elige una fecha.'); return; }
+      if (S.guards.some(g => g.date === date)) { toast('Ya hay una guardia ese día.'); return; }
+      const sel = document.getElementById('g-staff').value;
+      const staffId = sel === 'auto' ? autoGuardPharmacist(date) : sel;
+      S.guards.push({ id: uid(), date, staffId, type: document.getElementById('g-type').value });
+      save(); render();
+      toast('Guardia del ' + longDate(parse(date)).toLowerCase() + ' asignada a ' + (byId(staffId) ? byId(staffId).name : 'nadie') + '.');
+    }
+  });
+
+  render();
+  setInterval(renderNow, 60000);
+})();
+</script>
+</body></html><!--wrap-->
