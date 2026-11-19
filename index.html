@@ -101,11 +101,11 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .eyebrow { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: var(--on-hero-muted); }
 .brand p { margin: 2px 0 0; color: var(--on-hero-muted); font-size: 0.86rem; }
 
-.tabs { display: grid; grid-template-columns: repeat(3, auto); gap: 4px; background: var(--hero-glass); border: 1px solid var(--hero-line); padding: 4px; border-radius: 999px; }
+.tabs { display: grid; grid-template-columns: repeat(4, auto); gap: 4px; background: var(--hero-glass); border: 1px solid var(--hero-line); padding: 4px; border-radius: 999px; }
 .tabs button { border: 0; background: transparent; padding: 8px 18px; border-radius: 999px; cursor: pointer; font-weight: 600; color: var(--on-hero-muted); font-family: var(--f-display); }
 .tabs button:hover { color: var(--on-hero); }
 .tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent-strong); box-shadow: 0 2px 8px rgb(0 0 0 / 0.15); }
-@media (max-width: 560px) { .tabs { width: 100%; grid-template-columns: repeat(3, 1fr); } .tabs button { padding-inline: 4px; font-size: 0.9rem; } }
+@media (max-width: 560px) { .tabs { width: 100%; grid-template-columns: repeat(4, 1fr); } .tabs button { padding-inline: 4px; font-size: 0.9rem; } }
 
 /* Ahora */
 .now { background: var(--hero-glass); border: 1px solid var(--hero-line); border-radius: var(--radius); padding: 16px 20px; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 12px 24px; align-items: center; backdrop-filter: blur(6px); }
@@ -210,8 +210,14 @@ th { text-align: left; font-size: 0.72rem; letter-spacing: 0.08em; text-transfor
 td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 tbody tr:hover td { background: var(--surface-2); }
 tr:last-child td { border-bottom: 0; }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 td .rowact { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.ypl { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.yp { display: inline-flex; align-items: center; gap: 5px; font-size: 0.86rem; font-weight: 500; white-space: nowrap; }
+.yp .av { width: 20px; height: 20px; font-size: 0.6rem; }
+table.year td { padding-block: 7px; }
+tr.nowrow td { background: var(--accent-soft); }
+.nowrap { white-space: nowrap; }
 .person { display: flex; align-items: center; gap: 10px; font-weight: 600; white-space: nowrap; }
 
 form.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; }
@@ -252,6 +258,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       <nav class="tabs" role="tablist" aria-label="Secciones">
         <button role="tab" data-tab="cuadrante" id="tab-cuadrante">Cuadrante</button>
         <button role="tab" data-tab="equipo" id="tab-equipo">Equipo</button>
+        <button role="tab" data-tab="anual" id="tab-anual">Año</button>
         <button role="tab" data-tab="ajustes" id="tab-ajustes">Ajustes</button>
       </nav>
     </div>
@@ -365,10 +372,33 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     S.settings.tStart = '14:30';
     S.version = 8;
   }
+  let openYearView = false;
+  if (S.version < 9) {
+    // Turnos de 2027 tomados del Excel «HORARIO 2027 turnos v2» (Drive):
+    // Ramiro y Luci alternan por semanas (Ramiro empieza de mañana el 4-ene-2027),
+    // Lorena y Aizane siempre de mañana, Nas (Anastasia) siempre de tarde.
+    const find = n => S.staff.find(p => p.name.split(' ')[0] === n);
+    const ramiro = find('Ramiro'), lucia = find('Lucía'), lorena = find('Lorena'), aizane = find('Aizane'), nas = find('Anastasia');
+    S.weekPlan = S.weekPlan || {};
+    const start = new Date(2027, 0, 4);
+    for (let w = 0; w < 54; w++) {
+      const plan = {};
+      if (ramiro) plan[ramiro.id] = w % 2 ? 'T' : 'M';
+      if (lucia) plan[lucia.id] = w % 2 ? 'M' : 'T';
+      if (lorena) plan[lorena.id] = 'M';
+      if (aizane) plan[aizane.id] = 'M';
+      if (nas) plan[nas.id] = 'T';
+      S.weekPlan[ymd(addDays(start, w * 7))] = plan;
+    }
+    Object.keys(S.schedule).forEach(k => { if (k >= '2027-01-04') delete S.schedule[k]; });
+    S.version = 9;
+    openYearView = true;
+  }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
 
-  const ui = { tab: 'cuadrante', week: mondayOf(new Date()), confirm: null, editing: null };
+  const ui = { tab: 'cuadrante', week: mondayOf(new Date()), year: 2027, confirm: null, editing: null };
   try { const t = localStorage.getItem(KEY + ':tab'); if (t) ui.tab = t; } catch (e) {}
+  if (openYearView) { ui.tab = 'anual'; save(); }
 
   // ---------- Helpers de dominio ----------
   const byId = id => S.staff.find(p => p.id === id);
@@ -388,6 +418,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   // Turno de la semana: fijo (M/T) o alterno por semanas (WM: mañana en semanas pares, WT: al revés).
   // Toda la semana se hace el mismo turno.
   const effPref = (p, monday) => {
+    const plan = S.weekPlan && S.weekPlan[ymd(monday)];
+    if (plan && plan[p.id]) return plan[p.id];
     const even = weekIndex(monday) % 2 === 0;
     if (p.shift === 'WM') return even ? 'M' : 'T';
     if (p.shift === 'WT') return even ? 'T' : 'M';
@@ -436,7 +468,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     }
     return pickNow;
   }
-  const initials = p => p.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const initials = p => { const w = p.name.trim().split(/\s+/); return w.length > 1 ? (w[0][0] + w[1][0]).toUpperCase() : w[0].slice(0, 2); };
   const avatar = p => '<span class="av role-' + p.role + '" aria-hidden="true">' + esc(initials(p)) + '</span>';
   const roleBadge = p => '<span class="badge role-' + p.role + '">' + ROLES[p.role].short + '</span>';
 
@@ -755,6 +787,69 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     '</div>';
   }
 
+  // ---------- Render: año ----------
+  const isoWeek = d => {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+    return Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
+  };
+  function yearMondays(year) {
+    const out = [];
+    for (let m = mondayOf(new Date(year, 0, 4)); addDays(m, 3).getFullYear() === year; m = addDays(m, 7)) out.push(m);
+    return out;
+  }
+  function ensureYear(year) {
+    yearMondays(year).forEach(m => { if (!weekHasData(m) && ymd(addDays(m, 6)) >= todayKey()) generateWeek(m); });
+  }
+  function renderAnual() {
+    const year = ui.year;
+    ensureYear(year);
+    const mondays = yearMondays(year);
+    const tot = {};
+    const names = list => list.map(a => byId(a.id)).filter(Boolean)
+      .map(p => '<span class="yp role-' + p.role + '">' + avatar(p) + esc(p.name.split(' ')[0]) + '</span>').join('');
+    const rows = mondays.map(m => {
+      let M = null, T = null, sat = null, satKey = null;
+      for (let i = 0; i < 7; i++) {
+        const key = ymd(addDays(m, i)); const day = S.schedule[key]; if (!day) continue;
+        dayShifts(key).forEach(sh => (day[sh] || []).forEach(a => {
+          const t = tot[a.id] || (tot[a.id] = { h: 0, S: 0 });
+          t.h += shHours(key, sh); if (keySat(key)) t.S++;
+        }));
+        if (keySat(key)) { sat = day.M || []; satKey = key; }
+        else if (!M && day.M && day.M.length) { M = day.M; T = day.T || []; }
+      }
+      const isNow = ymd(m) === ymd(mondayOf(new Date()));
+      return '<tr class="' + (isNow ? 'nowrow' : '') + '"><td class="mono">S' + pad(isoWeek(m)) + '</td>' +
+        '<td class="nowrap">' + shortDate(m) + ' – ' + shortDate(addDays(m, 6)) + '</td>' +
+        '<td><div class="ypl">' + (M ? names(M) : '<span class="muted">—</span>') + '</div></td>' +
+        '<td><div class="ypl">' + (T ? names(T) : '<span class="muted">—</span>') + '</div></td>' +
+        '<td><div class="ypl">' + (sat ? names(sat) : '<span class="muted">Cerrado</span>') + '</div></td>' +
+        '<td><button class="btn sm" data-act="goto-week" data-w="' + ymd(m) + '">Ver semana</button></td></tr>';
+    }).join('');
+    const people = activeStaff().sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
+    const weeks = mondays.length;
+    const totals = people.map(p => {
+      const t = tot[p.id] || { h: 0, S: 0 };
+      return '<tr><td><span class="person">' + avatar(p) + esc(p.name) + '</span></td><td class="num">' + t.S + '</td><td class="num"><strong>' + fmtH(t.h) + '</strong></td><td class="num">' + fmtH(t.h / weeks) + '</td></tr>';
+    }).join('');
+    return '<div class="stack">' +
+      '<div class="weekbar"><div class="weeknav">' +
+        '<button class="btn round" data-act="year-prev" aria-label="Año anterior">‹</button>' +
+        '<span class="range">Año ' + year + '</span>' +
+        '<button class="btn round" data-act="year-next" aria-label="Año siguiente">›</button>' +
+        '<span class="pill ok">' + weeks + ' semanas</span>' +
+      '</div></div>' +
+      '<div class="cols">' +
+        '<section class="panel"><div class="panel-h"><h2>Turnos por semana</h2><span class="muted" style="font-size:.85rem">Mañana ' + range('M') + ' · tarde ' + range('T') + ' · sábado ' + satRange() + '</span></div>' +
+          '<div class="tablewrap"><table class="year"><thead><tr><th>Sem.</th><th>Fechas</th><th>Mañana</th><th>Tarde</th><th>Sábado</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '</section>' +
+        '<section class="panel"><h2>Total del año</h2><div class="tablewrap"><table><thead><tr><th>Persona</th><th class="num">Sáb.</th><th class="num">Horas</th><th class="num">Media/sem.</th></tr></thead><tbody>' + totals + '</tbody></table></div>' +
+          '<p class="note">Horas de cuadrante, sin extras, vacaciones ni guardias. Los festivos no están marcados todavía.</p>' +
+        '</section>' +
+      '</div></div>';
+  }
+
   // ---------- Render: ajustes ----------
   function renderAjustes() {
     const openOpts = [];
@@ -808,7 +903,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
     if (!weekHasData(mondayOf(new Date()))) generateWeek(mondayOf(new Date()));
     renderNow();
-    const views = { cuadrante: renderCuadrante, equipo: renderEquipo, ajustes: renderAjustes };
+    const views = { cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, ajustes: renderAjustes };
     document.getElementById('main').innerHTML = (views[ui.tab] || renderCuadrante)();
   }
 
@@ -857,6 +952,9 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       case 'prev': ui.week = addDays(ui.week, -7); ui.confirm = null; break;
       case 'next': ui.week = addDays(ui.week, 7); ui.confirm = null; break;
       case 'thisweek': ui.week = mondayOf(new Date()); break;
+      case 'goto-week': ui.week = parse(el.dataset.w); ui.tab = 'cuadrante'; window.scrollTo(0, 0); break;
+      case 'year-prev': ui.year--; break;
+      case 'year-next': ui.year++; break;
       case 'regen': ui.confirm = 'regen'; break;
       case 'regen-yes': generateWeek(ui.week); ui.confirm = null; toast('Cuadrante generado para la semana.'); break;
       case 'cancel': ui.confirm = null; ui.editing = null; break;

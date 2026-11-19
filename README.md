@@ -8,6 +8,7 @@ Abre `index.html` en cualquier navegador: no necesita instalación ni servidor. 
 
 - **Cuadrante semanal**: mañana de 08:30 a 15:00 y tarde de 14:30 a 21:00 (media hora de solape en el cambio de turno). Genera automáticamente 3 personas por turno con un farmacéutico o una persona responsable de turno, y reparte la responsabilidad de cada uno: mostrador, administración o gestión. Cada persona hace el mismo turno toda la semana. Todo se puede cambiar a mano y avisa si un turno queda incompleto, sin responsable o con alguien doblando turno.
 - **Sábados**: de 09:00 a 14:00 con 2 personas. Rotan todas por igual (2 sábados de cada 5) y siempre entra al menos una persona que pueda llevar el sábado (Ramiro, Lucía o Anastasia), de modo que Aizane y Lorena no coinciden solas.
+- **Año**: vista de todas las semanas del año con quién hace mañana, tarde y sábado, y el total de horas por persona. El año 2027 sigue el Excel «HORARIO 2027 turnos v2»: Ramiro y Luci alternan por semanas (Ramiro empieza de mañana el 4 de enero), Lorena y Aizane de mañana y Anastasia de tarde.
 - **Ahora**: quién está trabajando en este momento y qué hace.
 - **Equipo**: dar de alta y de baja con roles (titular, farmacéutico adjunto, auxiliar, estudiante en prácticas). No permite dar de baja al último farmacéutico adjunto. Al dar de baja a alguien se reasignan sus turnos pendientes.
 - **Ajustes**: hora de apertura, días que abre la farmacia y copia de seguridad.
