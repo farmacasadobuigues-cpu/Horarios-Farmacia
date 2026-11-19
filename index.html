@@ -435,6 +435,15 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     Object.keys(S.schedule).forEach(k => { if (k >= '2027-03-29') delete S.schedule[k]; });
     S.version = 11;
   }
+  if (S.version < 12) {
+    // Calendario laboral 2027 de la Comunitat Valenciana confirmado por la farmacia:
+    // se añade San José; el 15 de agosto cae en domingo y no figura en el calendario.
+    S.holidays = S.holidays || {};
+    S.holidays['2027-03-19'] = 'San José';
+    delete S.holidays['2027-08-15'];
+    Object.keys(S.schedule).forEach(k => { if (k >= '2027-03-15') delete S.schedule[k]; });
+    S.version = 12;
+  }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
 
   const ui = { tab: 'cuadrante', week: mondayOf(new Date()), year: 2027, confirm: null, editing: null };
