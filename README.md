@@ -1,4 +1,4 @@
-# Horarios Farmacia
+# Farmacia Carlos Casado Buigues · Cuadrante de turnos
 
 Aplicación web para organizar los turnos del equipo de una farmacia comunitaria y las guardias.
 
@@ -8,19 +8,20 @@ Abre `index.html` en cualquier navegador: no necesita instalación ni servidor. 
 
 - **Cuadrante semanal**: horario de 12 h dividido en mañana y tarde (09:00–15:00 y 15:00–21:00 por defecto). Genera automáticamente 3 personas por turno con al menos un farmacéutico, y reparte la responsabilidad de cada uno: mostrador, administración o gestión. Todo se puede cambiar a mano y avisa si un turno queda incompleto, sin farmacéutico, con alguien doblando turno o con quien sale de guardia.
 - **Ahora**: quién está trabajando en este momento y qué hace (o quién está de guardia).
-- **Equipo**: dar de alta y de baja con roles (titular, farmacéutico adjunto, auxiliar, estudiante en prácticas). No permite dar de baja al último adjunto ni a la titular. Al dar de baja a alguien se reasignan sus turnos y guardias pendientes.
+- **Equipo**: dar de alta y de baja con roles (titular, farmacéutico adjunto, auxiliar, estudiante en prácticas). No permite dar de baja al último farmacéutico adjunto. Al dar de baja a alguien se reasignan sus turnos y guardias pendientes.
 - **Guardias**: nocturnas o de 24 h, con reparto automático equilibrado entre farmacéuticos.
 - **Ajustes**: hora de apertura, días que abre la farmacia y copia de seguridad.
 
 Los estudiantes en prácticas van como refuerzo tutorizado y no cuentan para las 3 personas mínimas.
 
-## Equipo de ejemplo
+## Equipo inicial
 
 | Nombre | Rol | Turno |
 |---|---|---|
-| María Ortega | Farmacéutica titular | Mañana |
-| Javier Morales | Farmacéutico adjunto | Mañana |
-| Elena Navarro | Farmacéutica adjunta | Tarde |
-| Carmen Ruiz | Auxiliar | Mañana |
-| David Sánchez | Auxiliar | Tarde |
-| Laura Gómez | Auxiliar | Tarde |
+| Ramiro González | Farmacéutico adjunto | Mañana |
+| Lucía Rojo | Farmacéutica adjunta | Tarde |
+| Anastasia | Auxiliar | Mañana |
+| Aizane | Auxiliar | Mañana |
+| Lorena | Auxiliar | Tarde |
+
+Con cinco personas falta una por la tarde para llegar a 3 + 3; la aplicación lo avisa hasta que se dé de alta a alguien más.

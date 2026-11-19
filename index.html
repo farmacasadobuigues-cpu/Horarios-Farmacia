@@ -3,223 +3,261 @@
 <head><!--wrap-->
 <meta charset="utf-8"><!--wrap-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><!--wrap-->
-<title>Cuadrante de Turnos</title>
+<title>Farmacia Carlos Casado Buigues</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
 <style>
-/* Layout: cabecera con estado "ahora", pestañas, y cuadrícula de días (tarjeta por día con mañana/tarde) que se apila en móvil */
+/* Layout: banda superior azul verdoso con la marca de la farmacia y quién está trabajando ahora; debajo, pestañas de contenido y cuadrícula de días que se apila en móvil */
 :root {
-  --bg: #f3f6f5;
+  --bg: #edf5f5;
   --surface: #ffffff;
-  --surface-2: #e9efed;
-  --fg: #15211e;
-  --muted: #5a6a65;
-  --line: #d5dfdb;
-  --accent: #0d6b57;
+  --surface-2: #f3f8f8;
+  --fg: #10292c;
+  --muted: #587070;
+  --line: #d4e4e4;
+  --accent: #0b7f86;
+  --accent-strong: #075f66;
   --accent-fg: #ffffff;
-  --accent-soft: #d8eee7;
-  --r-tit: #6a46b8;   --r-tit-soft: #ece5fa;
-  --r-adj: #0d6b57;   --r-adj-soft: #d8eee7;
-  --r-aux: #2a5c9c;   --r-aux-soft: #e0eaf7;
-  --r-est: #9a5d06;   --r-est-soft: #f8ead3;
-  --ok: #1e7a3c;      --ok-soft: #dcf1e2;
+  --accent-soft: #d6eeee;
+  --hero-a: #064e58;
+  --hero-b: #0f9894;
+  --on-hero: #ffffff;
+  --on-hero-muted: rgb(255 255 255 / 0.78);
+  --hero-glass: rgb(255 255 255 / 0.12);
+  --hero-line: rgb(255 255 255 / 0.2);
+  --av-fg: #ffffff;
+  --r-tit: #7a50c2;   --r-tit-soft: #efe8fb;
+  --r-adj: #0b7f86;   --r-adj-soft: #d6eeee;
+  --r-aux: #2e6db3;   --r-aux-soft: #e1ecf8;
+  --r-est: #b06908;   --r-est-soft: #fbecd4;
+  --sh-m: #f1faf9;
+  --sh-t: #eff4fb;
+  --ok: #157a4a;      --ok-soft: #d9f2e5;
   --warn: #9a5800;    --warn-soft: #fbecd2;
   --err: #b3261e;     --err-soft: #f9dedb;
-  --guard: #1f3a8a;   --guard-soft: #e2e8fb;
-  --f-display: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --guard: #23458f;   --guard-soft: #e2e9fa;
+  --shadow: 0 1px 2px rgb(16 41 44 / 0.05), 0 6px 20px rgb(16 41 44 / 0.06);
+  --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  --radius: 10px;
+  --radius: 16px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e1513; --surface: #151f1c; --surface-2: #1c2926; --fg: #e2ebe8; --muted: #98a9a3; --line: #2a3a36;
-    --accent: #4cc2a3; --accent-fg: #052219; --accent-soft: #143a31;
-    --r-tit: #b8a0ee; --r-tit-soft: #2c2347; --r-adj: #4cc2a3; --r-adj-soft: #143a31;
-    --r-aux: #8ab6ee; --r-aux-soft: #1b2c44; --r-est: #e6aa52; --r-est-soft: #3a2a12;
-    --ok: #63cf8c; --ok-soft: #173826; --warn: #e6aa52; --warn-soft: #3a2a12; --err: #f28b82; --err-soft: #43201d;
-    --guard: #9fb4f5; --guard-soft: #1e2847;
+    --bg: #0a1617; --surface: #102022; --surface-2: #14292b; --fg: #dcefee; --muted: #93b0ae; --line: #22403f;
+    --accent: #3cc5c0; --accent-strong: #74dbd6; --accent-fg: #04201f; --accent-soft: #123739;
+    --hero-a: #05313a; --hero-b: #0a5c5e; --av-fg: #061a1b;
+    --r-tit: #bda4ef; --r-tit-soft: #2b2346; --r-adj: #3cc5c0; --r-adj-soft: #123739;
+    --r-aux: #8db8ef; --r-aux-soft: #182b44; --r-est: #e9ad57; --r-est-soft: #3a2a12;
+    --sh-m: #112a2b; --sh-t: #122437;
+    --ok: #5fd39a; --ok-soft: #143826; --warn: #e9ad57; --warn-soft: #3a2a12; --err: #f28b82; --err-soft: #43201d;
+    --guard: #a3b8f5; --guard-soft: #1d2846;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0e1513; --surface: #151f1c; --surface-2: #1c2926; --fg: #e2ebe8; --muted: #98a9a3; --line: #2a3a36;
-  --accent: #4cc2a3; --accent-fg: #052219; --accent-soft: #143a31;
-  --r-tit: #b8a0ee; --r-tit-soft: #2c2347; --r-adj: #4cc2a3; --r-adj-soft: #143a31;
-  --r-aux: #8ab6ee; --r-aux-soft: #1b2c44; --r-est: #e6aa52; --r-est-soft: #3a2a12;
-  --ok: #63cf8c; --ok-soft: #173826; --warn: #e6aa52; --warn-soft: #3a2a12; --err: #f28b82; --err-soft: #43201d;
-  --guard: #9fb4f5; --guard-soft: #1e2847;
+  --bg: #0a1617; --surface: #102022; --surface-2: #14292b; --fg: #dcefee; --muted: #93b0ae; --line: #22403f;
+  --accent: #3cc5c0; --accent-strong: #74dbd6; --accent-fg: #04201f; --accent-soft: #123739;
+  --hero-a: #05313a; --hero-b: #0a5c5e; --av-fg: #061a1b;
+  --r-tit: #bda4ef; --r-tit-soft: #2b2346; --r-adj: #3cc5c0; --r-adj-soft: #123739;
+  --r-aux: #8db8ef; --r-aux-soft: #182b44; --r-est: #e9ad57; --r-est-soft: #3a2a12;
+  --sh-m: #112a2b; --sh-t: #122437;
+  --ok: #5fd39a; --ok-soft: #143826; --warn: #e9ad57; --warn-soft: #3a2a12; --err: #f28b82; --err-soft: #43201d;
+  --guard: #a3b8f5; --guard-soft: #1d2846;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body {
-  background: var(--bg); color: var(--fg);
-  font: 15px/1.5 var(--f-body);
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--f-body); }
+.wrap {
+  max-width: 1280px; margin: 0 auto;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 20px 48px;
 }
-.app { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
-h1 { font-size: 1.6rem; font-weight: 800; }
-h2 { font-size: 1.2rem; font-weight: 700; }
-h3 { font-size: 1rem; font-weight: 700; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.015em; }
+h1 { font-size: clamp(1.45rem, 3.2vw, 2rem); font-weight: 800; line-height: 1.15; }
+h2 { font-size: 1.15rem; font-weight: 700; }
 .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 0.82em; }
 .muted { color: var(--muted); }
 button, select, input, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Cabecera */
-.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
-.brand { display: flex; align-items: center; gap: 12px; }
-.cross { width: 34px; height: 34px; position: relative; flex: none; }
-.cross::before, .cross::after { content: ""; position: absolute; background: var(--accent); border-radius: 3px; }
-.cross::before { left: 11px; top: 0; width: 12px; height: 34px; }
-.cross::after { top: 11px; left: 0; height: 12px; width: 34px; }
-.brand p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+/* Banda superior */
+.hero { background: linear-gradient(125deg, var(--hero-a), var(--hero-b)); color: var(--on-hero); position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; right: -60px; top: -80px; width: 340px; height: 340px; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / 0.12), transparent 70%); pointer-events: none; }
+.hero .wrap { padding-block: 22px 26px; display: flex; flex-direction: column; gap: 22px; position: relative; z-index: 1; }
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; }
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.logo { width: 52px; height: 52px; border-radius: 14px; background: var(--on-hero); display: grid; place-items: center; flex: none; box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); }
+.cross { width: 28px; height: 28px; position: relative; }
+.cross::before, .cross::after { content: ""; position: absolute; background: #0f9894; border-radius: 3px; }
+.cross::before { left: 9px; top: 0; width: 10px; height: 28px; }
+.cross::after { top: 9px; left: 0; height: 10px; width: 28px; }
+.eyebrow { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: var(--on-hero-muted); }
+.brand p { margin: 2px 0 0; color: var(--on-hero-muted); font-size: 0.86rem; }
 
-.tabs { display: grid; grid-template-columns: repeat(4, auto); gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 999px; }
-@media (max-width: 560px) { .tabs { width: 100%; grid-template-columns: repeat(4, 1fr); } .tabs button { padding-inline: 6px; } }
-.tabs button { border: 0; background: transparent; padding: 7px 16px; border-radius: 999px; cursor: pointer; font-weight: 500; color: var(--muted); }
-.tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+.tabs { display: grid; grid-template-columns: repeat(4, auto); gap: 4px; background: var(--hero-glass); border: 1px solid var(--hero-line); padding: 4px; border-radius: 999px; }
+.tabs button { border: 0; background: transparent; padding: 8px 18px; border-radius: 999px; cursor: pointer; font-weight: 600; color: var(--on-hero-muted); font-family: var(--f-display); }
+.tabs button:hover { color: var(--on-hero); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent-strong); box-shadow: 0 2px 8px rgb(0 0 0 / 0.15); }
+@media (max-width: 560px) { .tabs { width: 100%; grid-template-columns: repeat(4, 1fr); } .tabs button { padding-inline: 4px; font-size: 0.9rem; } }
 
 /* Ahora */
-.now { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 12px 24px; align-items: start; }
-.now .label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-.now .state { font-family: var(--f-display); font-size: 1.25rem; font-weight: 800; }
-.now .state .mono { white-space: nowrap; }
+.now { background: var(--hero-glass); border: 1px solid var(--hero-line); border-radius: var(--radius); padding: 16px 20px; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 12px 24px; align-items: center; backdrop-filter: blur(6px); }
+.now .label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-hero-muted); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.live { width: 8px; height: 8px; border-radius: 50%; background: #7ff0c8; box-shadow: 0 0 0 4px rgb(127 240 200 / 0.25); }
+.now .state { font-family: var(--f-display); font-size: 1.3rem; font-weight: 800; }
+.now .state .mono { white-space: nowrap; color: var(--on-hero-muted); font-weight: 500; }
 .now .people { display: flex; flex-wrap: wrap; gap: 8px; }
-.who { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; background: var(--surface-2); font-size: 0.9rem; }
+.now .soft { color: var(--on-hero-muted); }
+.who { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border-radius: 999px; background: var(--hero-glass); border: 1px solid var(--hero-line); }
+.who-t { display: flex; flex-direction: column; line-height: 1.2; }
+.who-t strong { font-size: 0.92rem; }
+.who-t small { color: var(--on-hero-muted); font-size: 0.78rem; }
 @media (max-width: 640px) { .now { grid-template-columns: 1fr; } }
 
-/* Botones */
-.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-weight: 500; white-space: nowrap; }
-.btn:hover { border-color: var(--muted); }
-.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
-.btn.primary:hover { filter: brightness(1.08); }
+/* Avatares y roles */
+.role-titular { --c: var(--r-tit); --cs: var(--r-tit-soft); }
+.role-adjunto { --c: var(--r-adj); --cs: var(--r-adj-soft); }
+.role-auxiliar { --c: var(--r-aux); --cs: var(--r-aux-soft); }
+.role-estudiante { --c: var(--r-est); --cs: var(--r-est-soft); }
+.av { width: 30px; height: 30px; border-radius: 50%; background: var(--c); color: var(--av-fg); display: inline-grid; place-items: center; font: 700 0.72rem/1 var(--f-display); flex: none; letter-spacing: 0.02em; }
+.who .av { box-shadow: 0 0 0 2px var(--on-hero); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--c); }
+.badge { display: inline-block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--cs); color: var(--c); white-space: nowrap; }
+
+/* Contenido */
+.app { padding-block: 24px 56px; display: flex; flex-direction: column; gap: 20px; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 8px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: border-color .15s, background .15s; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); box-shadow: 0 2px 8px rgb(11 127 134 / 0.25); }
+.btn.primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
 .btn.danger { color: var(--err); }
+.btn.danger:hover { border-color: var(--err); }
 .btn.danger.solid { background: var(--err); color: var(--surface); border-color: var(--err); }
-.btn.sm { padding: 4px 10px; font-size: 0.85rem; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.iconbtn { border: 0; background: transparent; cursor: pointer; color: var(--muted); width: 24px; height: 24px; border-radius: 6px; font-size: 1rem; line-height: 1; }
+.btn.sm { padding: 5px 12px; font-size: 0.85rem; border-radius: 8px; }
+.btn.round { width: 38px; height: 38px; padding: 0; border-radius: 50%; font-size: 1.1rem; }
+.iconbtn { border: 0; background: transparent; cursor: pointer; color: var(--muted); width: 26px; height: 26px; border-radius: 8px; font-size: 1.05rem; line-height: 1; }
 .iconbtn:hover { background: var(--err-soft); color: var(--err); }
 
-/* Barra de semana */
-.weekbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; justify-content: space-between; }
-.weeknav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.weeknav .range { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; min-width: 12ch; text-align: center; }
+.weekbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; justify-content: space-between; }
+.weeknav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.weeknav .range { font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; min-width: 12ch; text-align: center; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
 .pill.ok { background: var(--ok-soft); color: var(--ok); }
 .pill.err { background: var(--err-soft); color: var(--err); }
 .pill.warn { background: var(--warn-soft); color: var(--warn); }
 .pill.guard { background: var(--guard-soft); color: var(--guard); }
 
-/* Leyenda */
-.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.82rem; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 
-/* Rol */
-.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--c); }
-.role-titular { --c: var(--r-tit); --cs: var(--r-tit-soft); }
-.role-adjunto { --c: var(--r-adj); --cs: var(--r-adj-soft); }
-.role-auxiliar { --c: var(--r-aux); --cs: var(--r-aux-soft); }
-.role-estudiante { --c: var(--r-est); --cs: var(--r-est-soft); }
-.badge { display: inline-block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 1px 7px; border-radius: 5px; background: var(--cs); color: var(--c); white-space: nowrap; }
-
 /* Cuadrícula semanal */
-.week { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; }
-.day { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; min-width: 0; }
-.day.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.day > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.day .dname { font-family: var(--f-display); font-weight: 700; }
-.day .ddate { color: var(--muted); font-size: 0.85rem; }
-.day .todaytag { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-.day.closed { background: var(--surface-2); }
-.closedmsg { padding: 12px 14px; color: var(--muted); font-size: 0.9rem; }
-.guardline { margin: 0 14px 12px; padding: 8px 10px; border-radius: 8px; background: var(--guard-soft); color: var(--guard); font-size: 0.85rem; display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
-.guardline:first-of-type { margin-top: 12px; }
-.shift { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
-.shift + .shift { border-top: 1px dashed var(--line); }
-.shift-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.week { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 14px; }
+.day { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; min-width: 0; box-shadow: var(--shadow); overflow: hidden; }
+.day.today { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow); }
+.day > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; flex-wrap: wrap; }
+.day .dname { font-family: var(--f-display); font-weight: 800; font-size: 1.02rem; }
+.day .ddate { color: var(--muted); font-size: 0.85rem; margin-left: 4px; }
+.day .todaytag { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-fg); background: var(--accent); padding: 2px 9px; border-radius: 999px; }
+.day.closed { background: var(--surface-2); box-shadow: none; }
+.closedmsg { padding: 4px 16px 16px; color: var(--muted); font-size: 0.9rem; }
+.guardline { margin: 0 12px 10px; padding: 8px 12px; border-radius: 10px; background: var(--guard-soft); color: var(--guard); font-size: 0.84rem; display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.shift { margin: 0 8px 8px; padding: 10px 10px 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; }
+.shift.sh-M { background: var(--sh-m); }
+.shift.sh-T { background: var(--sh-t); }
+.shift-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-inline: 4px; }
 .shift-h strong { font-family: var(--f-display); font-size: 0.92rem; }
+.shift-h .mono { color: var(--muted); margin-left: 4px; }
 .shift ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.pp { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px; padding: 5px 4px 5px 8px; border-radius: 8px; background: var(--surface-2); border-left: 3px solid var(--c); }
-.pp .nm { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.pp .nm span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; font-size: 0.9rem; }
-.pp.gone { opacity: 0.6; text-decoration: line-through; }
-select.resp { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 2px 4px; font-size: 0.8rem; width: 118px; }
-.pp .badge { font-size: 0.64rem; padding: 1px 5px; }
-select.add { border: 1px dashed var(--line); background: transparent; border-radius: 8px; padding: 5px 8px; font-size: 0.85rem; color: var(--muted); width: 100%; cursor: pointer; }
+.pp { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 6px 4px 6px 6px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.pp .nm { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.pp .nm .n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; font-size: 0.9rem; }
+.pp .nm .r { font-size: 0.72rem; color: var(--c); font-weight: 600; }
+.pp.gone { opacity: 0.55; }
+.pp.gone .n { text-decoration: line-through; }
+select.resp { border: 0; border-radius: 999px; padding: 4px 8px; font-size: 0.78rem; font-weight: 600; width: 122px; cursor: pointer; background: var(--accent-soft); color: var(--accent-strong); }
+select.resp[data-resp="admin"] { background: var(--r-aux-soft); color: var(--r-aux); }
+select.resp[data-resp="gestion"] { background: var(--r-tit-soft); color: var(--r-tit); }
+select.resp[data-resp="practicas"] { background: var(--r-est-soft); color: var(--r-est); }
+select.add { border: 1px dashed var(--line); background: transparent; border-radius: 10px; padding: 6px 10px; font-size: 0.85rem; color: var(--muted); width: 100%; cursor: pointer; }
+select.add:hover { border-color: var(--accent); color: var(--accent-strong); }
 .issues { display: flex; flex-wrap: wrap; gap: 4px; }
-.issue { font-size: 0.76rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+.issue { font-size: 0.76rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
 .issue.err { background: var(--err-soft); color: var(--err); }
 .issue.warn { background: var(--warn-soft); color: var(--warn); }
-.issue.info { background: var(--surface-2); color: var(--muted); }
+.issue.info { background: var(--surface); color: var(--muted); }
 
 /* Paneles */
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; box-shadow: var(--shadow); }
 .panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.cols { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cols { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
-.stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
 .tablewrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-th { text-align: left; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { text-align: left; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tbody tr:hover td { background: var(--surface-2); }
 tr:last-child td { border-bottom: 0; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 td .rowact { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
-.person { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.person { display: flex; align-items: center; gap: 10px; font-weight: 600; white-space: nowrap; }
 
 form.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; }
-.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .field label { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
-.field input, .field select, .field textarea, td input, td select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 10px; width: 100%; min-width: 0; }
+.field input, .field select, .field textarea, td input, td select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 11px; width: 100%; min-width: 0; }
+.field input:focus, .field select:focus { border-color: var(--accent); }
 textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; resize: vertical; }
 
-.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .checks li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; }
-.checks .mark { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; }
+.checks .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; }
 .checks .mark.ok { background: var(--ok-soft); color: var(--ok); }
 .checks .mark.err { background: var(--err-soft); color: var(--err); }
 
 .daychecks { display: flex; flex-wrap: wrap; gap: 6px; }
-.daychecks label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 0.88rem; }
+.daychecks label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: 0.88rem; }
 .note { font-size: 0.85rem; color: var(--muted); margin: 0; max-width: 70ch; }
-.banner { padding: 10px 14px; border-radius: var(--radius); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-.banner.err { background: var(--err-soft); color: var(--err); }
+.banner { padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .banner.warn { background: var(--warn-soft); color: var(--warn); }
 
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 0.9rem; max-width: calc(100vw - 32px); box-shadow: 0 6px 20px rgb(0 0 0 / 0.25); z-index: 20; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 11px 18px; border-radius: 12px; font-size: 0.9rem; max-width: calc(100vw - 32px); box-shadow: 0 8px 24px rgb(0 0 0 / 0.25); z-index: 20; }
 @media (prefers-reduced-motion: no-preference) { .toast { animation: rise .2s ease-out; } @keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } } }
 </style>
 </head><!--wrap-->
 <body><!--wrap-->
-<div class="app">
-  <div class="top">
-    <div class="brand">
-      <div class="cross" aria-hidden="true"></div>
-      <div>
-        <h1>Cuadrante de turnos</h1>
-        <p id="subtitle">Farmacia comunitaria</p>
+<header class="hero">
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><div class="cross"></div></div>
+        <div>
+          <div class="eyebrow">Cuadrante de turnos</div>
+          <h1>Farmacia Carlos Casado Buigues</h1>
+          <p id="subtitle"></p>
+        </div>
       </div>
+      <nav class="tabs" role="tablist" aria-label="Secciones">
+        <button role="tab" data-tab="cuadrante" id="tab-cuadrante">Cuadrante</button>
+        <button role="tab" data-tab="equipo" id="tab-equipo">Equipo</button>
+        <button role="tab" data-tab="guardias" id="tab-guardias">Guardias</button>
+        <button role="tab" data-tab="ajustes" id="tab-ajustes">Ajustes</button>
+      </nav>
     </div>
-    <nav class="tabs" role="tablist" aria-label="Secciones">
-      <button role="tab" data-tab="cuadrante" id="tab-cuadrante">Cuadrante</button>
-      <button role="tab" data-tab="equipo" id="tab-equipo">Equipo</button>
-      <button role="tab" data-tab="guardias" id="tab-guardias">Guardias</button>
-      <button role="tab" data-tab="ajustes" id="tab-ajustes">Ajustes</button>
-    </nav>
+    <section class="now" id="now" aria-live="polite"></section>
   </div>
-  <section class="now" id="now" aria-live="polite"></section>
-  <main id="main"></main>
-</div>
+</header>
+<main class="wrap app" id="main"></main>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
@@ -227,7 +265,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   'use strict';
 
   // ---------- Constantes ----------
-  const KEY = 'farmacia-turnos-v1';
+  const KEY = 'farmacia-ccb-turnos-v2';
   const ROLES = {
     titular:    { label: 'Farmacéutica/o titular',   short: 'Titular',   abbr: 'TIT', pharm: true,  order: 1 },
     adjunto:    { label: 'Farmacéutica/o adjunta/o', short: 'Adjunto',   abbr: 'ADJ', pharm: true,  order: 0 },
@@ -265,18 +303,17 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const today = new Date();
     const since = ymd(addDays(today, -400));
     const staff = [
-      { id: 's1', name: 'María Ortega',   role: 'titular',  shift: 'M' },
-      { id: 's2', name: 'Javier Morales', role: 'adjunto',  shift: 'M' },
-      { id: 's3', name: 'Elena Navarro',  role: 'adjunto',  shift: 'T' },
-      { id: 's4', name: 'Carmen Ruiz',    role: 'auxiliar', shift: 'M' },
-      { id: 's5', name: 'David Sánchez',  role: 'auxiliar', shift: 'T' },
-      { id: 's6', name: 'Laura Gómez',    role: 'auxiliar', shift: 'T' }
+      { id: 's2', name: 'Ramiro González', role: 'adjunto',  shift: 'M' },
+      { id: 's3', name: 'Lucía Rojo',      role: 'adjunto',  shift: 'T' },
+      { id: 's4', name: 'Anastasia',       role: 'auxiliar', shift: 'M' },
+      { id: 's5', name: 'Aizane',          role: 'auxiliar', shift: 'M' },
+      { id: 's6', name: 'Lorena',          role: 'auxiliar', shift: 'T' }
     ].map(p => Object.assign(p, { active: true, since: since, until: null }));
-    const rota = ['s2', 's3', 's1'];
+    const rota = ['s2', 's3'];
     const guards = [];
     for (let i = 0; i < 5; i++) {
       const d = addDays(today, 2 + i * 6);
-      guards.push({ id: uid(), date: ymd(d), staffId: rota[i % 3], type: d.getDay() === 0 ? '24h' : 'noche' });
+      guards.push({ id: uid(), date: ymd(d), staffId: rota[i % 2], type: d.getDay() === 0 ? '24h' : 'noche' });
     }
     return { settings: { open: '09:00', days: [1, 2, 3, 4, 5, 6] }, staff, schedule: {}, guards };
   }
@@ -303,6 +340,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   const isOpenDay = d => S.settings.days.includes(d.getDay());
   const guardRange = g => g.type === '24h' ? '00:00–24:00' : hm(times('T')[1]) + '–' + hm(times('M')[0]);
   const effPref = (p, monday) => p.shift === 'X' ? (weekIndex(monday) % 2 ? 'T' : 'M') : p.shift;
+  const initials = p => p.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const avatar = p => '<span class="av role-' + p.role + '" aria-hidden="true">' + esc(initials(p)) + '</span>';
   const roleBadge = p => '<span class="badge role-' + p.role + '">' + ROLES[p.role].short + '</span>';
 
   // ---------- Generador de cuadrante ----------
@@ -352,7 +391,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
         const ph = pick(act.filter(isPharm));
         if (ph) list.push(ph);
         while (list.length < PER_SHIFT) {
-          const c = pick(act.filter(p => p.role !== 'estudiante' && !list.includes(p)));
+          const c = pick(act.filter(p => p.role !== 'estudiante' && !list.includes(p) && !used.has(p.id)));
           if (!c) break;
           list.push(c);
         }
@@ -420,7 +459,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       state = 'Turno de ' + SH_LABEL[shiftNow].toLowerCase() + ' <span class="mono muted">' + range(shiftNow) + '</span>';
       people = (day[shiftNow] || []).map(a => {
         const p = byId(a.id); if (!p) return '';
-        return '<span class="who role-' + p.role + '"><span class="dot"></span><strong>' + esc(p.name) + '</strong> ' + roleBadge(p) + ' <span class="muted">' + RESP[a.resp] + '</span></span>';
+        return '<span class="who role-' + p.role + '">' + avatar(p) + '<span class="who-t"><strong>' + esc(p.name) + '</strong><small>' + ROLES[p.role].short + ' · ' + RESP[a.resp] + '</small></span></span>';
       }).join('');
     } else if (guardTonight && (guardTonight.type === '24h' || mins >= times('T')[1])) {
       state = 'Farmacia de guardia <span class="mono muted">' + guardRange(guardTonight) + '</span>';
@@ -430,17 +469,17 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       people = guardPerson(guardYesterday);
     } else {
       state = 'Cerrado';
-      people = '<span class="muted">' + nextOpening(now) + '</span>';
+      people = '<span class="soft">' + nextOpening(now) + '</span>';
     }
     document.getElementById('now').innerHTML =
-      '<div><div class="label">' + label + '</div><div class="state">' + state + '</div></div>' +
+      '<div><div class="label"><span class="live"></span>' + label + '</div><div class="state">' + state + '</div></div>' +
       '<div class="people">' + people + '</div>';
     document.getElementById('subtitle').textContent =
       'Abierto ' + hm(times('M')[0]) + '–' + hm(times('T')[1]) + ' · 12 h · ' + PER_SHIFT + ' personas por turno, siempre con farmacéutico';
   }
   function guardPerson(g) {
     const p = byId(g.staffId);
-    return p ? '<span class="who role-' + p.role + '"><span class="dot"></span><strong>' + esc(p.name) + '</strong> ' + roleBadge(p) + ' <span class="muted">Farmacéutico de guardia</span></span>'
+    return p ? '<span class="who role-' + p.role + '">' + avatar(p) + '<span class="who-t"><strong>' + esc(p.name) + '</strong><small>Farmacéutico de guardia</small></span></span>'
              : '<span class="issue err">Guardia sin farmacéutico asignado</span>';
   }
   function nextOpening(now) {
@@ -473,14 +512,15 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     let html = '<div class="stack">' +
       '<div class="weekbar">' +
         '<div class="weeknav">' +
-          '<button class="btn" data-act="prev" aria-label="Semana anterior">‹</button>' +
+          '<button class="btn round" data-act="prev" aria-label="Semana anterior">‹</button>' +
           '<span class="range">' + rangeTxt + '</span>' +
-          '<button class="btn" data-act="next" aria-label="Semana siguiente">›</button>' +
+          '<button class="btn round" data-act="next" aria-label="Semana siguiente">›</button>' +
           '<button class="btn sm" data-act="thisweek">Esta semana</button>' +
           status +
         '</div>' +
         '<div class="actions">' + regen + '</div>' +
       '</div>' +
+      shortBanner() +
       '<div class="legend">' +
         Object.keys(ROLES).map(r => '<span class="role-' + r + '"><span class="dot"></span>' + ROLES[r].label + '</span>').join('') +
         '<span><span class="pill guard" style="padding:0 8px">G</span> Guardia</span>' +
@@ -502,12 +542,12 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
         const list = (S.schedule[key] && S.schedule[key][sh]) || [];
         const iss = shiftIssues(key, sh);
         const ok = !iss.some(x => x.lvl === 'err');
-        html += '<section class="shift"><div class="shift-h"><strong>' + SH_LABEL[sh] + ' <span class="mono muted">' + range(sh) + '</span></strong>' +
+        html += '<section class="shift sh-' + sh + '"><div class="shift-h"><span><strong>' + SH_LABEL[sh] + '</strong><span class="mono">' + range(sh) + '</span></span>' +
           '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + PER_SHIFT + '</span></div><ul>';
         list.forEach(a => {
           const p = byId(a.id); if (!p) return;
-          html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '"><span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span>' + esc(shortName(p)) + '</span><span class="badge role-' + p.role + '">' + ROLES[p.role].abbr + '</span></span>' +
-            '<select class="resp" data-act="resp" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Responsabilidad de ' + esc(p.name) + '">' +
+          html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(shortName(p)) + '</span><span class="r">' + ROLES[p.role].short + '</span></span>' +
+            '<select class="resp" data-resp="' + a.resp + '" data-act="resp" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Responsabilidad de ' + esc(p.name) + '">' +
             Object.keys(RESP).map(r => '<option value="' + r + '"' + (r === a.resp ? ' selected' : '') + '>' + RESP[r] + '</option>').join('') + '</select>' +
             '<button class="iconbtn" data-act="rm" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Quitar a ' + esc(p.name) + ' del turno">×</button></li>';
         });
@@ -524,6 +564,15 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     }
     html += '</div>' + renderWeekSummary(monday) + '</div>';
     return html;
+  }
+
+  function shortBanner() {
+    const team = activeStaff().filter(p => p.role !== 'estudiante').length;
+    if (team >= PER_SHIFT * 2) return '';
+    const miss = PER_SHIFT * 2 - team;
+    return '<div class="banner warn"><span>Con ' + team + ' personas no se cubren ' + PER_SHIFT + ' por la mañana y ' + PER_SHIFT + ' por la tarde sin doblar turno: ' +
+      (miss > 1 ? 'faltan ' + miss + ' personas' : 'falta 1 persona') + ' cada día. Da de alta a alguien o añádelo a mano en el turno.</span>' +
+      '<button class="btn sm" data-tab="equipo">Ir a Equipo</button></div>';
   }
 
   function renderWeekSummary(monday) {
@@ -604,7 +653,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       '<div class="stack">' +
         '<section class="panel"><div class="panel-h"><h2>Dar de alta</h2></div>' +
           '<form class="grid" id="alta-form" autocomplete="off">' +
-            '<div class="field"><label for="alta-name">Nombre y apellidos</label><input id="alta-name" required placeholder="p. ej. Pablo Torres"></div>' +
+            '<div class="field"><label for="alta-name">Nombre y apellidos</label><input id="alta-name" required placeholder="Nombre de la persona"></div>' +
             '<div class="field"><label for="alta-role">Rol</label><select id="alta-role">' + roleOpts('auxiliar') + '</select></div>' +
             '<div class="field"><label for="alta-shift">Turno habitual</label><select id="alta-shift">' + prefOpts('M') + '</select></div>' +
             '<button class="btn primary" type="submit">Dar de alta</button>' +
@@ -618,7 +667,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       '</div>' +
       '<section class="panel"><h2>Requisitos de plantilla</h2><ul class="checks">' +
         checks.map(c => '<li><span class="mark ' + (c.ok ? 'ok' : 'err') + '">' + (c.ok ? '✓' : '!') + '</span><span>' + c.t + '</span></li>').join('') +
-      '</ul><p class="note">No se puede dar de baja al último farmacéutico adjunto ni a la titular. El cuadrante se genera con el turno habitual de cada persona y reparte mostrador, administración y gestión.</p></section>' +
+      '</ul><p class="note">No se puede dar de baja al último farmacéutico adjunto. El cuadrante se genera con el turno habitual de cada persona y reparte mostrador, administración y gestión.</p></section>' +
     '</div>';
   }
 
@@ -660,7 +709,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       '</div>' +
       '<section class="panel"><h2>Reparto ' + year + '</h2><div class="tablewrap"><table><tbody>' +
         counts.map(c => '<tr><td><span class="person role-' + c.p.role + '"><span class="dot"></span>' + esc(c.p.name) + '</span></td><td class="num"><strong>' + c.n + '</strong> ' + (c.n === 1 ? 'guardia' : 'guardias') + '</td></tr>').join('') +
-      '</tbody></table></div><p class="note">Solo pueden hacer guardia la titular y los farmacéuticos adjuntos.</p></section>' +
+      '</tbody></table></div><p class="note">Solo pueden hacer guardia los farmacéuticos (adjuntos o titular).</p></section>' +
     '</div>';
   }
 
@@ -681,7 +730,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const order = [1, 2, 3, 4, 5, 6, 0];
     const reset = ui.confirm === 'reset'
       ? '<span class="muted" style="font-size:.85rem">Se borrarán el equipo, los cuadrantes y las guardias.</span><button class="btn danger solid sm" data-act="reset-yes">Sí, restaurar</button><button class="btn sm" data-act="cancel">Cancelar</button>'
-      : '<button class="btn danger" data-act="reset">Restaurar datos de ejemplo</button>';
+      : '<button class="btn danger" data-act="reset">Restaurar equipo inicial</button>';
     return '<div class="cols">' +
       '<div class="stack">' +
         '<section class="panel"><h2>Horario de apertura</h2>' +
@@ -699,7 +748,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           '<div class="actions"><button class="btn" data-act="copy">Copiar datos</button><button class="btn" data-act="import">Cargar datos pegados</button></div>' +
         '</section>' +
       '</div>' +
-      '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo de ejemplo (titular, dos adjuntos y tres auxiliares).</p><div class="actions">' + reset + '</div></section>' +
+      '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo inicial: Ramiro y Lucía (adjuntos) y Anastasia, Aizane y Lorena (auxiliares).</p><div class="actions">' + reset + '</div></section>' +
     '</div>';
   }
 
@@ -796,7 +845,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       }
       case 'g-del': S.guards = S.guards.filter(g => g.id !== id); save(); toast('Guardia eliminada.'); break;
       case 'reset': ui.confirm = 'reset'; break;
-      case 'reset-yes': S = seed(); ui.confirm = null; save(); toast('Datos de ejemplo restaurados.'); break;
+      case 'reset-yes': S = seed(); ui.confirm = null; save(); toast('Equipo inicial restaurado.'); break;
       case 'copy': {
         const box = document.getElementById('data-box');
         const fallback = () => { box.focus(); box.select(); toast('Texto seleccionado: cópialo con Ctrl+C.'); };
