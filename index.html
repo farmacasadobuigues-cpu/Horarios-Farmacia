@@ -125,7 +125,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .role-adjunto { --c: var(--r-adj); --cs: var(--r-adj-soft); }
 .role-auxiliar { --c: var(--r-aux); --cs: var(--r-aux-soft); }
 .role-estudiante { --c: var(--r-est); --cs: var(--r-est-soft); }
-.av { width: 30px; height: 30px; border-radius: 50%; background: var(--c); color: var(--av-fg); display: inline-grid; place-items: center; font: 700 0.72rem/1 var(--f-display); flex: none; letter-spacing: 0.02em; }
+.av { width: 28px; height: 28px; border-radius: 50%; background: var(--c); color: var(--av-fg); display: inline-grid; place-items: center; font: 700 0.72rem/1 var(--f-display); flex: none; letter-spacing: 0.02em; }
 .who .av { box-shadow: 0 0 0 2px var(--on-hero); }
 .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--c); }
 .badge { display: inline-block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--cs); color: var(--c); white-space: nowrap; }
@@ -183,7 +183,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .pp .nm .r { font-size: 0.72rem; color: var(--c); font-weight: 600; }
 .pp.gone { opacity: 0.55; }
 .pp.gone .n { text-decoration: line-through; }
-select.resp { border: 0; border-radius: 999px; padding: 4px 8px; font-size: 0.78rem; font-weight: 600; width: 122px; cursor: pointer; background: var(--accent-soft); color: var(--accent-strong); }
+select.resp { border: 0; border-radius: 999px; padding: 4px 8px; font-size: 0.78rem; font-weight: 600; width: 112px; cursor: pointer; background: var(--accent-soft); color: var(--accent-strong); }
 select.resp[data-resp="admin"] { background: var(--r-aux-soft); color: var(--r-aux); }
 select.resp[data-resp="gestion"] { background: var(--r-tit-soft); color: var(--r-tit); }
 select.resp[data-resp="practicas"] { background: var(--r-est-soft); color: var(--r-est); }
@@ -522,7 +522,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       '</div>' +
       shortBanner() +
       '<div class="legend">' +
-        Object.keys(ROLES).map(r => '<span class="role-' + r + '"><span class="dot"></span>' + ROLES[r].label + '</span>').join('') +
+        Object.keys(ROLES).filter(r => r === 'estudiante' || activeStaff().some(p => p.role === r)).map(r => '<span class="role-' + r + '"><span class="dot"></span>' + ROLES[r].label + '</span>').join('') +
         '<span><span class="pill guard" style="padding:0 8px">G</span> Guardia</span>' +
       '</div>' +
       '<div class="week">';
@@ -546,7 +546,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + PER_SHIFT + '</span></div><ul>';
         list.forEach(a => {
           const p = byId(a.id); if (!p) return;
-          html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(shortName(p)) + '</span><span class="r">' + ROLES[p.role].short + '</span></span>' +
+          html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(p.name.trim().split(/\s+/)[0]) + '</span><span class="r">' + ROLES[p.role].short + '</span></span>' +
             '<select class="resp" data-resp="' + a.resp + '" data-act="resp" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Responsabilidad de ' + esc(p.name) + '">' +
             Object.keys(RESP).map(r => '<option value="' + r + '"' + (r === a.resp ? ' selected' : '') + '>' + RESP[r] + '</option>').join('') + '</select>' +
             '<button class="iconbtn" data-act="rm" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Quitar a ' + esc(p.name) + ' del turno">×</button></li>';
