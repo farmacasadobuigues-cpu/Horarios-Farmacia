@@ -130,6 +130,8 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .av { width: 28px; height: 28px; border-radius: 50%; background: var(--c); color: var(--av-fg); display: inline-grid; place-items: center; font: 700 0.72rem/1 var(--f-display); flex: none; letter-spacing: 0.02em; }
 .who .av { box-shadow: 0 0 0 2px var(--on-hero); }
 .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--c); }
+.chk { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 500; padding-bottom: 8px; white-space: nowrap; }
+.badge.lead { background: var(--accent-soft); color: var(--accent-strong); }
 .badge { display: inline-block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--cs); color: var(--c); white-space: nowrap; }
 
 /* Contenido */
@@ -284,7 +286,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   const RESP_SHORT = { mostrador: 'Mostrador', admin: 'Administrac.', gestion: 'Gestión', practicas: 'Prácticas' };
   const SHIFTS = ['M', 'T'];
   const SH_LABEL = { M: 'Mañana', T: 'Tarde' };
-  const PREF_LABEL = { M: 'Mañana', T: 'Tarde', X: 'Rotativo (alterna cada semana)' };
+  const PREF_LABEL = { M: 'Mañana', T: 'Tarde', DM: 'Alterna cada día (lunes de mañana)', DT: 'Alterna cada día (lunes de tarde)', X: 'Alterna cada semana' };
+  const PREF_SHORT = { M: 'Mañana', T: 'Tarde', DM: 'Alterna: lunes mañana', DT: 'Alterna: lunes tarde', X: 'Alterna cada semana' };
   const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const need = sh => (S.settings.min && S.settings.min[sh]) || 3;
@@ -307,8 +310,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const today = new Date();
     const since = ymd(addDays(today, -400));
     const staff = [
-      { id: 's2', name: 'Ramiro González', role: 'adjunto',  shift: 'M' },
-      { id: 's3', name: 'Lucía Rojo',      role: 'tecnico',  shift: 'T' },
+      { id: 's2', name: 'Ramiro González', role: 'adjunto',  shift: 'DM' },
+      { id: 's3', name: 'Lucía Rojo',      role: 'tecnico',  shift: 'DT', lead: true },
       { id: 's4', name: 'Anastasia',       role: 'auxiliar', shift: 'M' },
       { id: 's5', name: 'Aizane',          role: 'auxiliar', shift: 'M' },
       { id: 's6', name: 'Lorena',          role: 'auxiliar', shift: 'T' }
@@ -319,7 +322,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       const d = addDays(today, 2 + i * 6);
       guards.push({ id: uid(), date: ymd(d), staffId: rota[i % rota.length], type: d.getDay() === 0 ? '24h' : 'noche' });
     }
-    return { version: 3, settings: { open: '09:00', days: [1, 2, 3, 4, 5, 6], min: { M: 3, T: 2 } }, staff, schedule: {}, guards };
+    return { version: 4, settings: { open: '09:00', days: [1, 2, 3, 4, 5, 6], min: { M: 3, T: 2 } }, staff, schedule: {}, guards };
   }
 
   let S = null;
@@ -336,6 +339,16 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     }
     S.settings.min = S.settings.min || { M: 3, T: 2 };
     S.version = 3;
+  }
+  if (S.version < 4) {
+    // Ramiro alterna mañana/tarde cada día y Lucía, responsable de turno, hace el turno contrario.
+    const ramiro = S.staff.find(p => p.name === 'Ramiro González');
+    const lucia = S.staff.find(p => p.name === 'Lucía Rojo');
+    if (ramiro && ramiro.shift === 'M') ramiro.shift = 'DM';
+    if (lucia) { lucia.lead = true; if (lucia.shift === 'T') lucia.shift = 'DT'; }
+    const t = ymd(new Date());
+    Object.keys(S.schedule).forEach(k => { if (k >= t) delete S.schedule[k]; });
+    S.version = 4;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
 
@@ -355,7 +368,14 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   const range = sh => hm(times(sh)[0]) + '–' + hm(times(sh)[1]);
   const isOpenDay = d => S.settings.days.includes(d.getDay());
   const guardRange = g => g.type === '24h' ? '00:00–24:00' : hm(times('T')[1]) + '–' + hm(times('M')[0]);
-  const effPref = (p, monday) => p.shift === 'X' ? (weekIndex(monday) % 2 ? 'T' : 'M') : p.shift;
+  const effPref = (p, monday, i) => {
+    if (p.shift === 'X') return weekIndex(monday) % 2 ? 'T' : 'M';
+    if (p.shift === 'DM') return (i || 0) % 2 ? 'T' : 'M';
+    if (p.shift === 'DT') return (i || 0) % 2 ? 'M' : 'T';
+    return p.shift;
+  };
+  // Responsable de turno: un farmacéutico o una persona marcada como responsable.
+  const isLead = p => !!p && (isPharm(p) || !!p.lead);
   const initials = p => p.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const avatar = p => '<span class="av role-' + p.role + '" aria-hidden="true">' + esc(initials(p)) + '</span>';
   const roleBadge = p => '<span class="badge role-' + p.role + '">' + ROLES[p.role].short + '</span>';
@@ -363,9 +383,9 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   // ---------- Generador de cuadrante ----------
   function assignResp(people, seedIdx) {
     const out = people.map(p => ({ id: p.id, resp: null }));
-    const ph = out.filter(a => isPharm(byId(a.id)))
+    const ph = out.filter(a => isLead(byId(a.id)))
       .sort((a, b) => ROLES[byId(a.id).role].order - ROLES[byId(b.id).role].order);
-    // El primer farmacéutico (preferiblemente adjunto) supervisa el mostrador; el resto, gestión.
+    // El responsable del turno (preferiblemente el farmacéutico) supervisa el mostrador; si hay otro, gestión.
     ph.forEach((a, k) => { a.resp = k === 0 ? 'mostrador' : 'gestion'; });
     out.filter(a => byId(a.id).role === 'estudiante').forEach(a => { a.resp = 'practicas'; });
     const aux = out.filter(a => !a.resp);
@@ -398,21 +418,21 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       const offGuard = new Set(S.guards.filter(g => g.date === ymd(addDays(d, -1))).map(g => g.staffId));
       SHIFTS.forEach(sh => {
         const score = p => {
-          const pref = effPref(p, monday);
+          const pref = effPref(p, monday, i);
           return (pref === sh ? 0 : 2000) + (used.has(p.id) ? 10000 : 0) +
                  (sh === 'M' && offGuard.has(p.id) ? 4000 : 0) + (hours[p.id] || 0);
         };
         const pick = pool => pool.slice().sort((a, b) => score(a) - score(b) || ROLES[a.role].order - ROLES[b.role].order)[0];
         const list = [];
-        // Un farmacéutico por turno; no se le hace doblar turno automáticamente.
-        const ph = pick(act.filter(p => isPharm(p) && !used.has(p.id)));
+        // Un responsable por turno (farmacéutico o responsable designado); nadie dobla turno automáticamente.
+        const ph = pick(act.filter(p => isLead(p) && !used.has(p.id)));
         if (ph) list.push(ph);
         while (list.length < need(sh)) {
           const c = pick(act.filter(p => p.role !== 'estudiante' && !list.includes(p) && !used.has(p.id)));
           if (!c) break;
           list.push(c);
         }
-        act.filter(p => p.role === 'estudiante' && !used.has(p.id) && effPref(p, monday) === sh)
+        act.filter(p => p.role === 'estudiante' && !used.has(p.id) && effPref(p, monday, i) === sh)
           .forEach(p => list.push(p));
         list.forEach(p => { used.add(p.id); hours[p.id] = (hours[p.id] || 0) + 6; });
         day[sh] = assignResp(list, i + (sh === 'T' ? 1 : 0));
@@ -437,7 +457,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const people = list.map(a => byId(a.id)).filter(Boolean);
     const valid = people.filter(p => activeOn(p, key));
     const count = valid.filter(p => p.role !== 'estudiante').length;
-    if (!valid.some(isPharm)) out.push({ lvl: 'err', t: 'Sin farmacéutico' });
+    if (!valid.some(isLead)) out.push({ lvl: 'err', t: 'Sin farmacéutico ni responsable' });
     const n = need(sh);
     if (count < n) out.push({ lvl: 'err', t: 'Falta' + (n - count > 1 ? 'n ' : ' ') + (n - count) + (n - count > 1 ? ' personas' : ' persona') });
     if (count > n) out.push({ lvl: 'info', t: 'Refuerzo: ' + count + ' personas' });
@@ -493,7 +513,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       '<div><div class="label"><span class="live"></span>' + label + '</div><div class="state">' + state + '</div></div>' +
       '<div class="people">' + people + '</div>';
     document.getElementById('subtitle').textContent =
-      'Abierto ' + hm(times('M')[0]) + '–' + hm(times('T')[1]) + ' · 12 h · ' + need('M') + ' personas de mañana y ' + need('T') + ' de tarde, siempre con farmacéutico';
+      'Abierto ' + hm(times('M')[0]) + '–' + hm(times('T')[1]) + ' · 12 h · ' + need('M') + ' personas de mañana y ' + need('T') + ' de tarde, siempre con farmacéutico o responsable';
   }
   function guardPerson(g) {
     const p = byId(g.staffId);
@@ -564,7 +584,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + need(sh) + '</span></div><ul>';
         list.forEach(a => {
           const p = byId(a.id); if (!p) return;
-          html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(p.name.trim().split(/\s+/)[0]) + '</span><span class="r">' + ROLES[p.role].short + '</span></span>' +
+          html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(p.name.trim().split(/\s+/)[0]) + '</span><span class="r">' + ROLES[p.role].short + (p.lead && !isPharm(p) ? ' · Responsable' : '') + '</span></span>' +
             '<select class="resp" data-resp="' + a.resp + '" data-act="resp" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Responsabilidad de ' + esc(p.name) + '">' +
             Object.keys(RESP).map(r => '<option value="' + r + '"' + (r === a.resp ? ' selected' : '') + '>' + RESP_SHORT[r] + '</option>').join('') + '</select>' +
             '<button class="iconbtn" data-act="rm" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Quitar a ' + esc(p.name) + ' del turno">×</button></li>';
@@ -620,15 +640,12 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   function staffChecks() {
     const act = activeStaff();
     const adj = act.filter(p => p.role === 'adjunto').length;
-    const ph = act.filter(isPharm).length;
     const team = act.filter(p => p.role !== 'estudiante').length;
-    const prefM = act.filter(p => isPharm(p) && p.shift === 'M').length;
-    const prefT = act.filter(p => isPharm(p) && p.shift === 'T').length;
+    const leads = act.filter(isLead).length;
     return [
       { ok: adj >= 1, t: 'Farmacéuticos adjuntos en plantilla: <strong>' + adj + '</strong> (mínimo 1)' },
-      { ok: ph >= 2, t: 'Farmacéuticos para cubrir mañana y tarde: <strong>' + ph + '</strong> (mínimo 2 sin doblar turno)' },
+      { ok: leads >= 2, t: 'Farmacéutico o responsable para mañana y tarde: <strong>' + leads + '</strong> (mínimo 2)' },
       { ok: team >= need('M') + need('T'), t: 'Personas para ' + need('M') + ' de mañana + ' + need('T') + ' de tarde: <strong>' + team + '</strong> (mínimo ' + (need('M') + need('T')) + ')' },
-      { ok: prefM >= 1 && prefT >= 1, t: 'Un farmacéutico con turno fijo de mañana y otro de tarde: <strong>' + (prefM >= 1 ? 'mañana ✓' : 'falta mañana') + ' · ' + (prefT >= 1 ? 'tarde ✓' : 'falta tarde') + '</strong>' }
     ];
   }
 
@@ -648,12 +665,12 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       if (ui.editing === p.id) {
         return '<tr><td><input id="ed-name" value="' + esc(p.name) + '" aria-label="Nombre"></td>' +
           '<td><select id="ed-role" aria-label="Rol">' + roleOpts(p.role) + '</select></td>' +
-          '<td><select id="ed-shift" aria-label="Turno habitual">' + prefOpts(p.shift) + '</select></td><td></td><td></td>' +
+          '<td><select id="ed-shift" aria-label="Turno habitual">' + prefOpts(p.shift) + '</select></td><td colspan="2"><label class="chk"><input type="checkbox" id="ed-lead"' + (p.lead ? ' checked' : '') + '> Responsable de turno</label></td>' +
           '<td><div class="rowact"><button class="btn primary sm" data-act="ed-save" data-id="' + p.id + '">Guardar</button><button class="btn sm" data-act="cancel">Cancelar</button></div></td></tr>';
       }
       const confirming = ui.confirm === 'baja:' + p.id;
-      return '<tr><td><span class="person role-' + p.role + '"><span class="dot"></span>' + esc(p.name) + '</span></td>' +
-        '<td>' + roleBadge(p) + '</td><td>' + PREF_LABEL[p.shift].split(' (')[0] + '</td>' +
+      return '<tr><td><span class="person">' + avatar(p) + esc(p.name) + '</span></td>' +
+        '<td>' + roleBadge(p) + (p.lead && !isPharm(p) ? ' <span class="badge lead">Responsable</span>' : '') + '</td><td>' + PREF_SHORT[p.shift] + '</td>' +
         '<td class="mono muted">' + shortDate(parse(p.since)) + ' ' + p.since.slice(0, 4) + '</td>' +
         '<td class="num">' + hoursWeek(p.id) + ' h</td>' +
         '<td><div class="rowact">' + (confirming
@@ -674,6 +691,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
             '<div class="field"><label for="alta-name">Nombre y apellidos</label><input id="alta-name" required placeholder="Nombre de la persona"></div>' +
             '<div class="field"><label for="alta-role">Rol</label><select id="alta-role">' + roleOpts('auxiliar') + '</select></div>' +
             '<div class="field"><label for="alta-shift">Turno habitual</label><select id="alta-shift">' + prefOpts('M') + '</select></div>' +
+            '<label class="chk"><input type="checkbox" id="alta-lead"> Responsable de turno</label>' +
             '<button class="btn primary" type="submit">Dar de alta</button>' +
           '</form>' +
           '<p class="note">Los estudiantes en prácticas van como refuerzo tutorizado: no cuentan para el mínimo de personas del turno.</p>' +
@@ -685,7 +703,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       '</div>' +
       '<section class="panel"><h2>Requisitos de plantilla</h2><ul class="checks">' +
         checks.map(c => '<li><span class="mark ' + (c.ok ? 'ok' : 'err') + '">' + (c.ok ? '✓' : '!') + '</span><span>' + c.t + '</span></li>').join('') +
-      '</ul><p class="note">No se puede dar de baja al último farmacéutico adjunto. El cuadrante se genera con el turno habitual de cada persona y reparte mostrador, administración y gestión.</p></section>' +
+      '</ul><p class="note">No se puede dar de baja al último farmacéutico adjunto. Cada turno necesita un farmacéutico o una persona marcada como responsable de turno. El cuadrante se genera con el turno habitual de cada persona y reparte mostrador, administración y gestión.</p></section>' +
     '</div>';
   }
 
@@ -863,7 +881,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           toast('Ya hay una persona titular.'); return;
         }
         if (p.role === 'titular' && role !== 'titular') { toast('La titular no puede cambiar de rol.'); return; }
-        p.name = name; p.role = role; p.shift = document.getElementById('ed-shift').value;
+        p.name = name; p.role = role; p.shift = document.getElementById('ed-shift').value; p.lead = document.getElementById('ed-lead').checked;
         ui.editing = null; save(); toast('Datos actualizados.'); break;
       }
       case 'g-del': S.guards = S.guards.filter(g => g.id !== id); save(); toast('Guardia eliminada.'); break;
@@ -925,7 +943,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       const role = document.getElementById('alta-role').value;
       if (!name) { toast('Escribe el nombre de la persona.'); return; }
       if (role === 'titular' && S.staff.some(p => p.active && p.role === 'titular')) { toast('Ya hay una persona titular en la farmacia.'); return; }
-      S.staff.push({ id: uid(), name, role, shift: document.getElementById('alta-shift').value, active: true, since: todayKey(), until: null });
+      S.staff.push({ id: uid(), name, role, shift: document.getElementById('alta-shift').value, lead: document.getElementById('alta-lead').checked, active: true, since: todayKey(), until: null });
       save(); render();
       toast(name + ' dada/o de alta como ' + ROLES[role].label.toLowerCase() + '. Pulsa «Generar cuadrante» para incluirla/o.');
     } else if (e.target.id === 'guard-form') {
