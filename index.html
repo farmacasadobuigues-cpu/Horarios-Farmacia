@@ -278,6 +278,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     gestion: 'Gestión',
     practicas: 'Prácticas tutorizadas'
   };
+  const RESP_SHORT = { mostrador: 'Mostrador', admin: 'Administrac.', gestion: 'Gestión', practicas: 'Prácticas' };
   const SHIFTS = ['M', 'T'];
   const SH_LABEL = { M: 'Mañana', T: 'Tarde' };
   const PREF_LABEL = { M: 'Mañana', T: 'Tarde', X: 'Rotativo (alterna cada semana)' };
@@ -548,7 +549,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           const p = byId(a.id); if (!p) return;
           html += '<li class="pp role-' + p.role + (activeOn(p, key) ? '' : ' gone') + '">' + avatar(p) + '<span class="nm" title="' + esc(p.name + ' · ' + ROLES[p.role].label) + '"><span class="n">' + esc(p.name.trim().split(/\s+/)[0]) + '</span><span class="r">' + ROLES[p.role].short + '</span></span>' +
             '<select class="resp" data-resp="' + a.resp + '" data-act="resp" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Responsabilidad de ' + esc(p.name) + '">' +
-            Object.keys(RESP).map(r => '<option value="' + r + '"' + (r === a.resp ? ' selected' : '') + '>' + RESP[r] + '</option>').join('') + '</select>' +
+            Object.keys(RESP).map(r => '<option value="' + r + '"' + (r === a.resp ? ' selected' : '') + '>' + RESP_SHORT[r] + '</option>').join('') + '</select>' +
             '<button class="iconbtn" data-act="rm" data-key="' + key + '" data-sh="' + sh + '" data-id="' + p.id + '" aria-label="Quitar a ' + esc(p.name) + ' del turno">×</button></li>';
         });
         html += '</ul>';
