@@ -218,6 +218,8 @@ td .rowact { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap
 table.year td { padding-block: 7px; }
 tr.nowrow td { background: var(--accent-soft); }
 .nowrap { white-space: nowrap; }
+.hol { font-size: 0.75rem; font-weight: 600; color: var(--warn); }
+.holrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 0.9rem; }
 .person { display: flex; align-items: center; gap: 10px; font-weight: 600; white-space: nowrap; }
 
 form.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; }
@@ -394,6 +396,37 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     S.version = 9;
     openYearView = true;
   }
+  if (S.version < 10) {
+    // Ramiro empieza 2027 de tarde (sigue la rutina de 2026) y Luci de mañana.
+    const ramiro = S.staff.find(p => p.name.split(' ')[0] === 'Ramiro');
+    const lucia = S.staff.find(p => p.name.split(' ')[0] === 'Lucía');
+    Object.keys(S.weekPlan || {}).forEach(k => {
+      const plan = S.weekPlan[k];
+      if (ramiro && plan[ramiro.id]) plan[ramiro.id] = plan[ramiro.id] === 'M' ? 'T' : 'M';
+      if (lucia && plan[lucia.id]) plan[lucia.id] = plan[lucia.id] === 'M' ? 'T' : 'M';
+    });
+    // Festivos: nacionales + locales (5 de agosto y 22 de octubre). La farmacia cierra esos días.
+    S.holidays = Object.assign({
+      '2026-12-08': 'Inmaculada Concepción',
+      '2026-12-25': 'Navidad',
+      '2027-01-01': 'Año Nuevo',
+      '2027-01-06': 'Epifanía del Señor',
+      '2027-03-26': 'Viernes Santo',
+      '2027-05-01': 'Fiesta del Trabajo',
+      '2027-08-05': 'Fiesta local',
+      '2027-08-15': 'Asunción de la Virgen',
+      '2027-10-12': 'Fiesta Nacional de España',
+      '2027-10-22': 'Fiesta local',
+      '2027-11-01': 'Todos los Santos',
+      '2027-12-06': 'Día de la Constitución',
+      '2027-12-08': 'Inmaculada Concepción',
+      '2027-12-25': 'Navidad'
+    }, S.holidays || {});
+    const t = ymd(mondayOf(new Date()));
+    Object.keys(S.schedule).forEach(k => { if (k >= t) delete S.schedule[k]; });
+    S.version = 10;
+    openYearView = true;
+  }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
 
   const ui = { tab: 'cuadrante', week: mondayOf(new Date()), year: 2027, confirm: null, editing: null };
@@ -414,7 +447,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
   const fmtH = h => String(Math.round(h * 10) / 10).replace('.', ',') + ' h';
   const hm = m => pad(Math.floor((m % 1440) / 60)) + ':' + pad(m % 60);
   const range = sh => hm(times(sh)[0]) + '–' + hm(times(sh)[1]);
-  const isOpenDay = d => S.settings.days.includes(d.getDay());
+  const holidayOf = d => (S.holidays || {})[ymd(d)];
+  const isOpenDay = d => S.settings.days.includes(d.getDay()) && !holidayOf(d);
   // Turno de la semana: fijo (M/T) o alterno por semanas (WM: mañana en semanas pares, WT: al revés).
   // Toda la semana se hace el mismo turno.
   const effPref = (p, monday) => {
@@ -456,6 +490,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const steps = Math.max(0, Math.round((monday - SAT_ANCHOR) / (7 * 864e5)));
     let pickNow = [];
     for (let w = 0; w <= steps; w++) {
+      // Un sábado festivo no cuenta en la rotación: a quienes les tocaba, les toca el siguiente.
+      if (holidayOf(addDays(SAT_ANCHOR, w * 7 + 5))) { if (w === steps) pickNow = []; continue; }
       const chosen = [];
       for (let k = 0; k < n; k++) {
         let pool = team.filter(p => !chosen.includes(p));
@@ -650,7 +686,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       const isToday = key === todayKey();
       const head = '<header><span><span class="dname">' + DAYS[d.getDay()] + '</span> <span class="ddate">' + shortDate(d) + '</span></span>' + (isToday ? '<span class="todaytag">Hoy</span>' : '') + '</header>';
       if (!isOpenDay(d) && !S.schedule[key]) {
-        html += '<article class="day closed' + (isToday ? ' today' : '') + '">' + head + '<div class="closedmsg">Cerrado</div></article>';
+        html += '<article class="day closed' + (isToday ? ' today' : '') + '">' + head + '<div class="closedmsg">' + (holidayOf(d) ? '<span class="pill warn">Festivo</span> ' + esc(holidayOf(d)) : 'Cerrado') + '</div></article>';
         continue;
       }
       html += '<article class="day' + (isToday ? ' today' : '') + '">' + head;
@@ -821,10 +857,11 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       }
       const isNow = ymd(m) === ymd(mondayOf(new Date()));
       return '<tr class="' + (isNow ? 'nowrow' : '') + '"><td class="mono">S' + pad(isoWeek(m)) + '</td>' +
-        '<td class="nowrap">' + shortDate(m) + ' – ' + shortDate(addDays(m, 6)) + '</td>' +
+        '<td class="nowrap">' + shortDate(m) + ' – ' + shortDate(addDays(m, 6)) +
+          [0, 1, 2, 3, 4, 5, 6].map(i => addDays(m, i)).filter(holidayOf).map(d => '<div class="hol">Festivo ' + DAYS[d.getDay()].slice(0, 3).toLowerCase() + ' ' + shortDate(d) + '</div>').join('') + '</td>' +
         '<td><div class="ypl">' + (M ? names(M) : '<span class="muted">—</span>') + '</div></td>' +
         '<td><div class="ypl">' + (T ? names(T) : '<span class="muted">—</span>') + '</div></td>' +
-        '<td><div class="ypl">' + (sat ? names(sat) : '<span class="muted">Cerrado</span>') + '</div></td>' +
+        '<td><div class="ypl">' + (sat && sat.length ? names(sat) : '<span class="muted">' + (holidayOf(addDays(m, 5)) ? 'Festivo' : 'Cerrado') + '</span>') + '</div></td>' +
         '<td><button class="btn sm" data-act="goto-week" data-w="' + ymd(m) + '">Ver semana</button></td></tr>';
     }).join('');
     const people = activeStaff().sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
@@ -848,6 +885,24 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           '<p class="note">Horas de cuadrante, sin extras, vacaciones ni guardias. Los festivos no están marcados todavía.</p>' +
         '</section>' +
       '</div></div>';
+  }
+
+  function renderHolidays() {
+    const list = Object.keys(S.holidays || {}).sort().filter(k => k >= ymd(addDays(new Date(), -1)));
+    return '<section class="panel"><h2>Festivos</h2><p class="note">La farmacia cierra estos días. Al añadir o quitar uno se rehace esa semana.</p>' +
+      '<div>' + (list.map(k => '<div class="holrow"><span><strong class="nowrap">' + DAYS[parse(k).getDay()].slice(0, 3) + ' ' + shortDate(parse(k)) + ' ' + k.slice(0, 4) + '</strong> · ' + esc(S.holidays[k]) + '</span>' +
+        '<button class="iconbtn" data-act="hol-del" data-d="' + k + '" aria-label="Quitar festivo">×</button></div>').join('') || '<p class="note">No hay festivos.</p>') + '</div>' +
+      '<form class="grid" id="hol-form"><div class="field"><label for="hol-date">Fecha</label><input type="date" id="hol-date" required></div>' +
+      '<div class="field"><label for="hol-name">Nombre</label><input id="hol-name" placeholder="Fiesta local"></div>' +
+      '<button class="btn primary" type="submit">Añadir festivo</button></form></section>';
+  }
+  function refreshWeekOf(key) {
+    const m = mondayOf(parse(key));
+    if (ymd(addDays(m, 6)) < todayKey()) return;
+    for (let i = 0; i < 7; i++) { const k = ymd(addDays(m, i)); if (k >= todayKey()) delete S.schedule[k]; }
+    // la rotación de sábados posterior también cambia
+    Object.keys(S.schedule).forEach(k => { if (k > key && keySat(k)) delete S.schedule[k]; });
+    generateWeek(m);
   }
 
   // ---------- Render: ajustes ----------
@@ -894,7 +949,9 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           '<div class="actions"><button class="btn" data-act="copy">Copiar datos</button><button class="btn" data-act="import">Cargar datos pegados</button></div>' +
         '</section>' +
       '</div>' +
+      '<div class="stack">' + renderHolidays() +
       '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo inicial: Ramiro (adjunto), Lucía (técnico, responsable) y Anastasia, Aizane y Lorena (auxiliares).</p><div class="actions">' + reset + '</div></section>' +
+      '</div>' +
     '</div>';
   }
 
@@ -991,6 +1048,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
         ui.editing = null; save(); toast('Datos actualizados.'); break;
       }
       case 'reset': ui.confirm = 'reset'; break;
+      case 'hol-del': delete S.holidays[el.dataset.d]; refreshWeekOf(el.dataset.d); save(); toast('Festivo quitado.'); break;
       case 'reset-yes': S = seed(); ui.confirm = null; save(); toast('Equipo inicial restaurado.'); break;
       case 'copy': {
         const box = document.getElementById('data-box');
@@ -1047,6 +1105,15 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
 
   document.addEventListener('submit', e => {
     e.preventDefault();
+    if (e.target.id === 'hol-form') {
+      const d = document.getElementById('hol-date').value;
+      if (!d) { toast('Elige una fecha.'); return; }
+      S.holidays = S.holidays || {};
+      S.holidays[d] = document.getElementById('hol-name').value.trim() || 'Festivo';
+      refreshWeekOf(d); save(); render();
+      toast('Festivo añadido: ' + longDate(parse(d)).toLowerCase() + '.');
+      return;
+    }
     if (e.target.id === 'alta-form') {
       const name = document.getElementById('alta-name').value.trim();
       const role = document.getElementById('alta-role').value;
