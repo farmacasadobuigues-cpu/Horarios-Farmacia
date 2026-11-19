@@ -444,6 +444,11 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     Object.keys(S.schedule).forEach(k => { if (k >= '2027-03-15') delete S.schedule[k]; });
     S.version = 12;
   }
+  if (S.version < 13) {
+    // Los festivos no mueven la rotación de sábados.
+    Object.keys(S.schedule).forEach(k => { if (k >= '2027-04-26') delete S.schedule[k]; });
+    S.version = 13;
+  }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
 
   const ui = { tab: 'cuadrante', week: mondayOf(new Date()), year: 2027, confirm: null, editing: null };
@@ -507,8 +512,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
     const steps = Math.max(0, Math.round((monday - SAT_ANCHOR) / (7 * 864e5)));
     let pickNow = [];
     for (let w = 0; w <= steps; w++) {
-      // Un sábado festivo no cuenta en la rotación: a quienes les tocaba, les toca el siguiente.
-      if (holidayOf(addDays(SAT_ANCHOR, w * 7 + 5))) { if (w === steps) pickNow = []; continue; }
+      // Un sábado festivo cuenta en la rotación igual: a quienes les tocaba, libran ese día.
       const chosen = [];
       for (let k = 0; k < n; k++) {
         let pool = team.filter(p => !chosen.includes(p));
@@ -703,7 +707,8 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
       const isToday = key === todayKey();
       const head = '<header><span><span class="dname">' + DAYS[d.getDay()] + '</span> <span class="ddate">' + shortDate(d) + '</span></span>' + (isToday ? '<span class="todaytag">Hoy</span>' : '') + '</header>';
       if (!isOpenDay(d) && !S.schedule[key]) {
-        html += '<article class="day closed' + (isToday ? ' today' : '') + '">' + head + '<div class="closedmsg">' + (holidayOf(d) ? '<span class="pill warn">Festivo</span> ' + esc(holidayOf(d)) : 'Cerrado') + '</div></article>';
+        html += '<article class="day closed' + (isToday ? ' today' : '') + '">' + head + '<div class="closedmsg">' + (holidayOf(d) ? '<span class="pill warn">Festivo</span> ' + esc(holidayOf(d)) +
+          (d.getDay() === 6 && S.settings.sat ? '<br>Libran: ' + satRotation(monday).map(p => esc(p.name.split(' ')[0])).join(' y ') : '') : 'Cerrado') + '</div></article>';
         continue;
       }
       html += '<article class="day' + (isToday ? ' today' : '') + '">' + head;
@@ -878,7 +883,7 @@ textarea { font-family: var(--f-mono); font-size: 0.78rem; min-height: 140px; re
           [0, 1, 2, 3, 4, 5, 6].map(i => addDays(m, i)).filter(holidayOf).map(d => '<div class="hol">Festivo ' + DAYS[d.getDay()].slice(0, 3).toLowerCase() + ' ' + shortDate(d) + '</div>').join('') + '</td>' +
         '<td><div class="ypl">' + (M ? names(M) : '<span class="muted">—</span>') + '</div></td>' +
         '<td><div class="ypl">' + (T ? names(T) : '<span class="muted">—</span>') + '</div></td>' +
-        '<td><div class="ypl">' + (sat && sat.length ? names(sat) : '<span class="muted">' + (holidayOf(addDays(m, 5)) ? 'Festivo' : 'Cerrado') + '</span>') + '</div></td>' +
+        '<td><div class="ypl">' + (sat && sat.length ? names(sat) : (holidayOf(addDays(m, 5)) && S.settings.sat ? '<span class="hol">Festivo · libran</span> ' + names(satRotation(m)) : '<span class="muted">Cerrado</span>')) + '</div></td>' +
         '<td><button class="btn sm" data-act="goto-week" data-w="' + ymd(m) + '">Ver semana</button></td></tr>';
     }).join('');
     const people = activeStaff().sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
