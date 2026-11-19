@@ -4,6 +4,10 @@ Aplicación web para organizar los turnos del equipo de una farmacia comunitaria
 
 Abre `index.html` en cualquier navegador: no necesita instalación ni servidor. Los datos se guardan en el propio navegador (en **Ajustes** puedes copiarlos como copia de seguridad o pasarlos a otro equipo).
 
+## Imagen
+
+Colores y tipografía (Titillium Web) del manual de identidad de la farmacia, con el anagrama «Cb». Cada persona tiene un avatar friki en broma (Maestro Jedi, Once, La Duquesa, Madre de dragones, Miércoles, El niño mago, Droide), que se elige en Equipo.
+
 ## Qué hace
 
 - **Cuadrante semanal**: mañana de 08:30 a 15:00 y tarde de 14:30 a 21:00 (media hora de solape en el cambio de turno). Genera automáticamente 3 personas por turno con un farmacéutico o una persona responsable de turno, y reparte la responsabilidad de cada uno: mostrador, administración o gestión. Cada persona hace el mismo turno toda la semana. Todo se puede cambiar a mano y avisa si un turno queda incompleto, sin responsable o con alguien doblando turno.
