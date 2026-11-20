@@ -1442,7 +1442,10 @@ tr.past td { opacity: 0.6; }
     const role = WEB && AUTH.user ? (AUTH.user.owner ? 'owner' : 'staff') : null;
     document.getElementById('tab-mi').hidden = role === 'owner';
     document.getElementById('tab-equipo').hidden = role === 'staff';
-    if (role === 'owner' && ui.tab === 'mi') ui.tab = 'cuadrante';
+    if (role === 'owner' && ui.tab === 'mi') ui.tab = 'equipo';
+    // La farmacia ve primero «Equipo» y luego «Semana».
+    const tEq = document.getElementById('tab-equipo'), tSem = document.getElementById('tab-cuadrante');
+    if (role === 'owner' && tEq.nextElementSibling !== tSem) tSem.parentNode.insertBefore(tEq, tSem);
     if (role === 'staff' && (ui.tab === 'equipo' || ui.tab === 'ajustes')) ui.tab = 'mi';
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
     const selTab = document.getElementById('tab-' + ui.tab);
@@ -1513,7 +1516,7 @@ tr.past td { opacity: 0.6; }
     if (sync.canEdit) restoreDraft();
     hideLogin();
     document.getElementById('hdr-logout').hidden = false;
-    if (isOwnerUser() && ui.tab === 'mi') ui.tab = 'cuadrante';
+    if (isOwnerUser() && ui.tab === 'mi') ui.tab = 'equipo';
     setSync(sync.canEdit ? 'ok' : 'ro', sync.canEdit ? (sync.dirty ? 'Editando · cambios sin publicar' : 'Puedes editar · el equipo solo consulta') : (isOwnerUser() ? 'Solo consulta · entra con tu clave para editar' : 'Hola, ' + (AUTH.user.staffId && byId(AUTH.user.staffId) ? byId(AUTH.user.staffId).name.split(' ')[0] : AUTH.user.u)));
     render();
   }
@@ -1525,7 +1528,7 @@ tr.past td { opacity: 0.6; }
     if (entry) { try { raw = await unwrapKey(entry, pw); } catch (e) { raw = null; } }
     if (!raw) { showLogin('Usuario o contraseña incorrectos.'); const f = document.getElementById('lg-user'); if (f) f.value = username; return; }
     if (remember) { try { localStorage.setItem(KEY + ':sess', JSON.stringify({ u, dk: toB64(raw) })); } catch (e) {} }
-    ui.tab = entry.owner ? 'cuadrante' : 'mi';
+    ui.tab = entry.owner ? 'equipo' : 'mi';
     try { await openWith(raw, u); } catch (e) { showLogin('No se ha podido abrir el cuadrante. Recarga la página.'); }
   }
   function logout() {
