@@ -1,0 +1,53 @@
+{
+ "v": 1,
+ "users": [
+  {
+   "u": "farmacia",
+   "owner": true,
+   "salt": "NCaxKxYtiG5LdoL8tdzrFw==",
+   "iv": "kexaoxFFnt56o2qa",
+   "iter": 200000,
+   "wk": "46AVcld2QDwiYdpJ7RhDIJnjPEqAXn9AMAkiojGetQS6av/SRw3cc/mj0XmWtXhr"
+  },
+  {
+   "u": "ramiro",
+   "staffId": "s2",
+   "salt": "OutBIe9nWSPNHBZvuTlBxQ==",
+   "iv": "+I3g9r8sHRz9mS3o",
+   "iter": 200000,
+   "wk": "mOrECGyPTzcs2sazHI0msKzvloQjbKPWnm//kdcjqXbVDh3Ufsde+p6jXetTSVAw"
+  },
+  {
+   "u": "lucia",
+   "staffId": "s3",
+   "salt": "Y9XVD2IHNelPHg/DoLvydg==",
+   "iv": "wQcQa3AvxAx2lPMz",
+   "iter": 200000,
+   "wk": "kKm0xkw7KWnB+726Es+hSRMythEknFaXPBlcDwqQGEaafz3qLleUTId5szvUFQrQ"
+  },
+  {
+   "u": "anastasia",
+   "staffId": "s4",
+   "salt": "AzlyxWIoRcQkjfNO8fcIuQ==",
+   "iv": "GaEy30yHvm2MbPgy",
+   "iter": 200000,
+   "wk": "cqYfpMvZhwDsstmWLskuV/nyUou2rLmeQkkHSBPlBg3wI6IHwm5OS0pI4nYyupuM"
+  },
+  {
+   "u": "aizane",
+   "staffId": "s5",
+   "salt": "9yFICwIzzpuZyeyfJTiDfA==",
+   "iv": "Co+Y9oNP5QxIMRCt",
+   "iter": 200000,
+   "wk": "hHAAn6ptwVlqBPInIzgecac42aLxH4G1WENgQsmldgib5tyMemaw2qi6Ro3udE8i"
+  },
+  {
+   "u": "lorena",
+   "staffId": "s6",
+   "salt": "croz2AilEJzugsZmbqCC5Q==",
+   "iv": "PRDeZxvxEKIO4/Bp",
+   "iter": 200000,
+   "wk": "WdjeW9RxR+ifSyHaPfdn3E8r2WIYH6qXRWU+c80unUUqmGGk8a8tb6eUC/uOMHvC"
+  }
+ ]
+}
