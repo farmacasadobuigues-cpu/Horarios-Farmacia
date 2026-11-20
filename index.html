@@ -808,7 +808,7 @@ tr.past td { opacity: 0.6; }
   const AV_DEFAULT = { s2: 'jedi', s3: 'duquesa', s4: 'once', s5: 'dragones', s6: 'miercoles' };
   const avKey = p => (p.avatar && AVATARS[p.avatar]) ? p.avatar : (AV_DEFAULT[p.id] || 'droide');
   const avatar = p => { if (p.photo) return '<span class="av photo" aria-hidden="true"><img src="' + p.photo + '" alt=""></span>'; const a = AVATARS[avKey(p)]; return '<span class="av" title="' + esc(a.label + ' · ' + a.serie) + '" aria-hidden="true"><svg viewBox="0 0 64 64">' + a.svg + '</svg></span>'; };
-  const avCaption = p => { const a = AVATARS[avKey(p)]; return a.label + ' · ' + a.serie; };
+  const avCaption = p => { if (p.photo) return 'Foto propia'; const a = AVATARS[avKey(p)]; return a.label + ' · ' + a.serie; };
   const avPicker = (name, sel) => '<div class="avpick" role="radiogroup" aria-label="Avatar">' + Object.keys(AVATARS).map(k =>
     '<label><input type="radio" name="' + name + '" value="' + k + '"' + (k === sel ? ' checked' : '') + '><span class="av"><svg viewBox="0 0 64 64">' + AVATARS[k].svg + '</svg></span>' + esc(AVATARS[k].label) + '</label>').join('') + '</div>';
   const roleBadge = p => '<span class="badge role-' + p.role + '">' + ROLES[p.role].short + '</span>';
