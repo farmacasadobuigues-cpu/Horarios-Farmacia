@@ -97,6 +97,9 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .brand p { margin: 2px 0 0; color: var(--on-brand-muted); font-size: 0.92rem; }
 .brand p.sync { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; padding: 1px 10px; border-radius: 4px; background: var(--brand-glass); border: 1px solid var(--brand-line); color: var(--on-brand); }
 .brand p.sync[hidden] { display: none; }
+.hdr-logout { display: inline-flex; align-items: center; margin: 6px 0 0 8px; padding: 2px 12px; border-radius: 4px; border: 1px solid var(--brand-line); background: transparent; color: var(--on-brand); font: 600 0.82rem/1.4 var(--f-body); cursor: pointer; }
+.hdr-logout:hover { background: var(--brand-glass); border-color: var(--accent); }
+.hdr-logout[hidden] { display: none; }
 .brand p.sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .brand p.sync[data-state="ro"]::before { background: var(--sage); }
 .brand p.sync[data-state="saving"]::before { background: #f2c14e; }
@@ -362,11 +365,12 @@ tr.past td { opacity: 0.6; }
           <h1>Farmacia Carlos Casado Buigues</h1>
           <p id="subtitle"></p>
           <p class="sync" id="sync" hidden></p>
+          <button class="hdr-logout" id="hdr-logout" data-act="logout" hidden>Cerrar sesión</button>
         </div>
       </div>
       <nav class="tabs" role="tablist" aria-label="Secciones">
         <button role="tab" data-tab="mi" id="tab-mi">Mi horario</button>
-        <button role="tab" data-tab="cuadrante" id="tab-cuadrante">Cuadrante</button>
+        <button role="tab" data-tab="cuadrante" id="tab-cuadrante">Semana</button>
         <button role="tab" data-tab="equipo" id="tab-equipo">Equipo</button>
         <button role="tab" data-tab="anual" id="tab-anual">Año</button>
         <button role="tab" data-tab="vacaciones" id="tab-vacaciones">Vacaciones</button>
@@ -1325,7 +1329,8 @@ tr.past td { opacity: 0.6; }
   function renderVacaciones() {
     const year = ui.year;
     const vp = ui.vacPending;
-    const people = activeStaff().filter(p => p.role !== 'estudiante').sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
+    const mine = WEB && AUTH.user && !AUTH.user.owner ? AUTH.user.staffId : null;   // el equipo solo ve las suyas
+    const people = activeStaff().filter(p => p.role !== 'estudiante' && (!mine || p.id === mine)).sort((a, b) => ROLES[a.role].order - ROLES[b.role].order || a.name.localeCompare(b.name));
     const fmtRange = v => v.from === v.to ? shortDate(parse(v.from)) : shortDate(parse(v.from)) + ' – ' + shortDate(parse(v.to));
     const cards = people.map(p => {
       const sm = vacSummary(p.id, year);
@@ -1343,11 +1348,11 @@ tr.past td { opacity: 0.6; }
           '<button class="iconbtn" data-act="vac-del" data-id="' + v.id + '" aria-label="Quitar estas vacaciones">×</button></span>').join('') || '<span class="muted">Sin vacaciones con fecha.</span>') + '</div>' +
       '</article>';
     }).join('');
-    const upcoming = (S.vacations || []).filter(v => v.to >= todayKey()).sort((a, b) => a.from.localeCompare(b.from)).slice(0, 8);
+    const upcoming = (S.vacations || []).filter(v => v.to >= todayKey() && (!mine || v.staffId === mine)).sort((a, b) => a.from.localeCompare(b.from)).slice(0, 8);
     return '<div class="stack">' +
       '<div class="weekbar"><div class="weeknav">' +
         '<button class="btn round" data-act="year-prev" aria-label="Año anterior">‹</button>' +
-        '<span class="range">Vacaciones ' + year + '</span>' +
+        '<span class="range">' + (mine ? 'Mis vacaciones ' : 'Vacaciones ') + year + '</span>' +
         '<button class="btn round" data-act="year-next" aria-label="Año siguiente">›</button>' +
         '<span class="pill ok">' + vacAllowance() + ' días naturales por persona</span>' +
       '</div></div>' +
@@ -1433,6 +1438,12 @@ tr.past td { opacity: 0.6; }
     const views = { mi: renderMi, guardias: renderGuardias, cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, vacaciones: renderVacaciones, ajustes: renderAjustes };
     document.getElementById('tab-ajustes').hidden = !sync.canEdit;
     if (!sync.canEdit && ui.tab === 'ajustes') ui.tab = 'cuadrante';
+    // En la web: la farmacia no tiene «Mi horario»; el equipo no ve «Equipo».
+    const role = WEB && AUTH.user ? (AUTH.user.owner ? 'owner' : 'staff') : null;
+    document.getElementById('tab-mi').hidden = role === 'owner';
+    document.getElementById('tab-equipo').hidden = role === 'staff';
+    if (role === 'owner' && ui.tab === 'mi') ui.tab = 'cuadrante';
+    if (role === 'staff' && (ui.tab === 'equipo' || ui.tab === 'ajustes')) ui.tab = 'mi';
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
     const selTab = document.getElementById('tab-' + ui.tab);
     if (selTab && selTab.scrollIntoView) { try { selTab.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {} }
@@ -1501,6 +1512,8 @@ tr.past td { opacity: 0.6; }
     sync.canEdit = isOwnerUser() && !!ghToken();
     if (sync.canEdit) restoreDraft();
     hideLogin();
+    document.getElementById('hdr-logout').hidden = false;
+    if (isOwnerUser() && ui.tab === 'mi') ui.tab = 'cuadrante';
     setSync(sync.canEdit ? 'ok' : 'ro', sync.canEdit ? (sync.dirty ? 'Editando · cambios sin publicar' : 'Puedes editar · el equipo solo consulta') : (isOwnerUser() ? 'Solo consulta · entra con tu clave para editar' : 'Hola, ' + (AUTH.user.staffId && byId(AUTH.user.staffId) ? byId(AUTH.user.staffId).name.split(' ')[0] : AUTH.user.u)));
     render();
   }
@@ -1512,6 +1525,7 @@ tr.past td { opacity: 0.6; }
     if (entry) { try { raw = await unwrapKey(entry, pw); } catch (e) { raw = null; } }
     if (!raw) { showLogin('Usuario o contraseña incorrectos.'); const f = document.getElementById('lg-user'); if (f) f.value = username; return; }
     if (remember) { try { localStorage.setItem(KEY + ':sess', JSON.stringify({ u, dk: toB64(raw) })); } catch (e) {} }
+    ui.tab = entry.owner ? 'cuadrante' : 'mi';
     try { await openWith(raw, u); } catch (e) { showLogin('No se ha podido abrir el cuadrante. Recarga la página.'); }
   }
   function logout() {
