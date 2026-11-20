@@ -256,6 +256,8 @@ textarea { font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; min-
 table.year td { padding-block: 6px; }
 tr.nowrow td { background: var(--accent-soft); }
 .nowrap { white-space: nowrap; }
+.ownerfoot { display: flex; justify-content: center; padding-top: 12px; }
+.ownerfoot .linkbtn { color: var(--muted); font-weight: 400; }
 .guardline { margin: 0 12px 10px; padding: 7px 12px; border-radius: 6px; background: var(--r-tit-soft); color: var(--r-tit); font-size: 0.88rem; display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
 .gpeople { display: flex; flex-wrap: wrap; gap: 6px; }
 .gchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--muted); }
@@ -428,7 +430,15 @@ tr.past td { opacity: 0.6; }
   // enlace lo ve sin cuenta, y quien puede editar lo vuelve a publicar con sus cambios.
   // Abierto como archivo suelto, funciona en local con los datos del navegador.
   const SYNC_ON = !!(window.claude && typeof window.claude.use === 'function');
-  const sync = { canEdit: !SYNC_ON, artifact: null, dirty: false, publishing: false };
+  // Web pública (GitHub Pages): el cuadrante está en «datos.json»; la propietaria publica con su clave de GitHub.
+  const WEB = !SYNC_ON && /^https?:$/.test(location.protocol);
+  const GH_REPO = (() => {
+    const m = location.hostname.match(/^([^.]+)\.github\.io$/);
+    const seg = location.pathname.split('/').filter(Boolean)[0];
+    return m && seg ? m[1] + '/' + seg : 'farmacasadobuigues-cpu/Horarios-Farmacia';
+  })();
+  const GH_BRANCH = 'main';
+  const sync = { canEdit: !SYNC_ON && !WEB, artifact: null, dirty: false, publishing: false };
   let EMB = null;
   try { EMB = JSON.parse(document.getElementById('estado').textContent); } catch (e) { EMB = null; }
   // Fuente de la página tal como se publicó (para volver a publicarla con el estado nuevo).
@@ -443,7 +453,7 @@ tr.past td { opacity: 0.6; }
   })();
   const PAGE_RESET = (() => { const st = document.head && document.head.querySelector('style'); return st ? st.textContent : ''; })();
   if (EMB && Array.isArray(EMB.staff)) S = JSON.parse(JSON.stringify(EMB));
-  else if (!SYNC_ON) { try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; } }
+  else if (!SYNC_ON && !WEB) { try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; } }
   if (!S || !Array.isArray(S.staff)) S = seed();
   let openYearView = false;
   function migrate() {
@@ -589,7 +599,7 @@ tr.past td { opacity: 0.6; }
   }
   migrate();
   function save() {
-    if (!SYNC_ON) { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } return; }
+    if (!SYNC_ON && !WEB) { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } return; }
     // Cambios de quien edita: borrador en este navegador hasta pulsar «Publicar para el equipo».
     if (sync.canEdit && ui.userEdit) {
       sync.dirty = true;
@@ -602,7 +612,7 @@ tr.past td { opacity: 0.6; }
   try { const w = sessionStorage.getItem(KEY + ':week'); if (w) ui.week = parse(w); sessionStorage.removeItem(KEY + ':week'); } catch (e) {}
   try { const t = localStorage.getItem(KEY + ':tab'); if (t) ui.tab = t; } catch (e) {}
   try { ui.me = localStorage.getItem(KEY + ':me'); } catch (e) {}
-  if (openYearView) { ui.tab = 'anual'; save(); }
+  if (openYearView && !WEB) { ui.tab = 'anual'; save(); }
 
   // ---------- Helpers de dominio ----------
   const byId = id => S.staff.find(p => p.id === id);
@@ -1395,6 +1405,7 @@ tr.past td { opacity: 0.6; }
         '</section>' +
       '</div>' +
       '<div class="stack">' + renderHolidays() +
+      (WEB ? '<section class="panel"><h2>Modo edición</h2><p class="note">Estás editando con tu clave de GitHub en este navegador. Si este dispositivo no es tuyo, sal al terminar.</p><div class="actions"><button class="btn" data-act="owner-logout">Salir del modo edición</button></div></section>' : '') +
       '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo inicial: Ramiro (adjunto), Lucía (técnico, responsable) y Anastasia, Aizane y Lorena (auxiliares).</p><div class="actions">' + reset + '</div></section>' +
       '</div>' +
     '</div>';
@@ -1411,7 +1422,7 @@ tr.past td { opacity: 0.6; }
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
     const selTab = document.getElementById('tab-' + ui.tab);
     if (selTab && selTab.scrollIntoView) { try { selTab.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {} }
-    const pubBar = SYNC_ON && sync.canEdit && sync.dirty
+    const pubBar = (SYNC_ON || WEB) && sync.canEdit && sync.dirty
       ? '<div class="banner pub"><span><strong>Cambios sin publicar.</strong> El equipo todavía no los ve. <span id="autopub" class="muted"></span></span><span class="actions">' +
         (sync.publishing ? '<span>Publicando…</span>' : '<button class="btn sm" data-act="discard">Descartar</button><button class="btn primary" data-act="publish">Publicar para el equipo</button>') + '</span></div>'
       : '';
@@ -1419,18 +1430,48 @@ tr.past td { opacity: 0.6; }
     const ue = ui.userEdit; ui.userEdit = false;
     const body = (views[ui.tab] || renderCuadrante)();
     ui.userEdit = ue;
-    document.getElementById('main').innerHTML = pubBar + body;
+    document.getElementById('main').innerHTML = pubBar + body + (WEB ? ownerFooter() : '');
     if (!sync.canEdit) applyReadOnly();
   }
 
+  // Acceso de la propietaria en la web: una clave de GitHub guardada solo en su navegador.
+  const ghToken = () => { try { return localStorage.getItem(KEY + ':gh') || ''; } catch (e) { return ''; } };
+  function ownerFooter() {
+    if (sync.canEdit) return '';
+    if (!ui.ownerLogin) return '<div class="ownerfoot"><button class="linkbtn" data-act="owner-login">Acceso de la propietaria</button></div>';
+    return '<section class="panel ownerbox"><h2>Acceso de la propietaria</h2>' +
+      '<p class="note">Pega tu clave de GitHub para editar y publicar. Se guarda solo en este navegador.</p>' +
+      '<form class="grid" id="owner-form" autocomplete="off"><div class="field"><label for="gh-token">Clave de GitHub</label><input id="gh-token" type="password" required placeholder="github_pat_…"></div>' +
+      '<button class="btn primary" type="submit">Entrar</button><button class="btn" type="button" data-act="owner-cancel">Cancelar</button></form></section>';
+  }
+  async function ownerLogin(token) {
+    try {
+      const r = await fetch('https://api.github.com/repos/' + GH_REPO, { headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' } });
+      const j = r.ok ? await r.json() : null;
+      if (!j || !j.permissions || !j.permissions.push) { toast('Esa clave no tiene permiso para guardar en el repositorio de la app.'); return; }
+    } catch (e) { toast('No se ha podido comprobar la clave. Revisa la conexión.'); return; }
+    try { localStorage.setItem(KEY + ':gh', token); } catch (e) {}
+    ui.ownerLogin = false; sync.canEdit = true;
+    restoreDraft();
+    setSync('ok', sync.dirty ? 'Editando · cambios sin publicar' : 'Puedes editar · el equipo solo consulta');
+    render(); toast('Listo: ya puedes editar. Los cambios se publican para el equipo.');
+  }
+  function restoreDraft() {
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY + ':draft'));
+      if (d && d.S && d.baseRev === (EMB && EMB.rev || null)) { S = d.S; migrate(); sync.dirty = true; scheduleAutoPublish(); }
+      else localStorage.removeItem(KEY + ':draft');
+    } catch (e) {}
+  }
+
   // Quien solo consulta ve el cuadrante sin controles de edición.
-  const VIEW_ACTS = ['prev', 'next', 'thisweek', 'goto-week', 'year-prev', 'year-next', 'me-pick', 'me-change'];
+  const VIEW_ACTS = ['prev', 'next', 'thisweek', 'goto-week', 'year-prev', 'year-next', 'me-pick', 'me-change', 'owner-login', 'owner-cancel'];
   function applyReadOnly() {
     const m = document.getElementById('main');
     const alta = m.querySelector('#alta-form'); if (alta && alta.closest('.panel')) alta.closest('.panel').remove();
     m.querySelectorAll('button[data-act]').forEach(b => { if (!VIEW_ACTS.includes(b.dataset.act)) b.remove(); });
     m.querySelectorAll('label.btn, select.add, .actions .muted, .edit-only').forEach(e => e.remove());
-    m.querySelectorAll('select, input, textarea').forEach(e => { e.disabled = true; });
+    m.querySelectorAll('select, input, textarea').forEach(e => { if (!e.closest('.ownerbox')) e.disabled = true; });
   }
 
   let toastTimer;
@@ -1481,6 +1522,11 @@ tr.past td { opacity: 0.6; }
       case 'next': ui.week = addDays(ui.week, 7); ui.confirm = null; break;
       case 'thisweek': ui.week = mondayOf(new Date()); break;
       case 'publish': publishNow(); return;
+      case 'owner-login': ui.ownerLogin = true; render(); setTimeout(() => { const t = document.getElementById('gh-token'); if (t) t.focus(); }, 0); return;
+      case 'owner-cancel': ui.ownerLogin = false; break;
+      case 'owner-logout':
+        try { localStorage.removeItem(KEY + ':gh'); } catch (err) {}
+        sync.canEdit = false; ui.tab = 'mi'; setSync('ro', 'Solo consulta'); toast('Has salido del modo edición en este navegador.'); break;
       case 'discard':
         try { localStorage.removeItem(KEY + ':draft'); } catch (err) {}
         S = JSON.parse(JSON.stringify(EMB)); migrate(); sync.dirty = false; clearTimeout(sync.autoTimer); sync.autoAt = 0; toast('Cambios descartados.'); break;
@@ -1621,6 +1667,11 @@ tr.past td { opacity: 0.6; }
   document.addEventListener('submit', e => {
     e.preventDefault();
     userAct();
+    if (e.target.id === 'owner-form') {
+      const tk = document.getElementById('gh-token').value.trim();
+      if (tk) ownerLogin(tk);
+      return;
+    }
     if (e.target.id === 'guard-form') {
       const date = document.getElementById('g-date').value;
       if (!date) { toast('Elige la fecha de la guardia.'); return; }
@@ -1699,7 +1750,61 @@ tr.past td { opacity: 0.6; }
   }, 1000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && sync.dirty && !sync.publishing && sync.canEdit) publishNow(); });
 
+  const b64enc = str => { const bytes = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+  const b64dec = b64 => { const bin = atob(b64.replace(/\s/g, '')); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); };
+  async function publishWeb() {
+    const token = ghToken();
+    if (!token) { sync.canEdit = false; toast('Vuelve a entrar con tu clave para publicar.'); render(); return; }
+    sync.publishing = true; render(); setSync('saving', 'Publicando…');
+    const api = 'https://api.github.com/repos/' + GH_REPO + '/contents/datos.json';
+    const headers = { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' };
+    try {
+      const cur = await fetch(api + '?ref=' + GH_BRANCH + '&t=' + Date.now(), { headers, cache: 'no-store' });
+      if (cur.status === 401 || cur.status === 403) throw { code: 'auth' };
+      let sha;
+      if (cur.ok) {
+        const j = await cur.json(); sha = j.sha;
+        let remoteRev = null;
+        try { remoteRev = JSON.parse(b64dec(j.content || '')).rev || null; } catch (e) {}
+        if (EMB && remoteRev && EMB.rev && remoteRev !== EMB.rev) throw { code: 'conflict' };
+      }
+      const state = JSON.parse(JSON.stringify(S));
+      state.rev = new Date().toISOString();
+      const body = { message: 'Actualiza el cuadrante desde la app', content: b64enc(JSON.stringify(state)), branch: GH_BRANCH };
+      if (sha) body.sha = sha;
+      const r = await fetch(api, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, headers), body: JSON.stringify(body) });
+      if (r.status === 401 || r.status === 403) throw { code: 'auth' };
+      if (r.status === 409) throw { code: 'conflict' };
+      if (!r.ok) throw { code: 'upstream' };
+      EMB = state;
+      try { localStorage.removeItem(KEY + ':draft'); } catch (e) {}
+      sync.dirty = false; clearTimeout(sync.autoTimer); sync.autoAt = 0;
+      setSync('ok', 'Publicado · el equipo lo verá en 1 o 2 minutos');
+      toast('Publicado. El equipo lo verá al abrir o recargar la web (tarda 1 o 2 minutos en actualizarse).');
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'auth') { try { localStorage.removeItem(KEY + ':gh'); } catch (er) {} sync.canEdit = false; toast('Tu clave de GitHub ya no sirve (caducada o sin permiso). Entra con una nueva; tus cambios siguen guardados.'); }
+      else if (code === 'conflict') toast('Hay una versión más nueva publicada desde otro dispositivo. Recarga la página antes de publicar; tus cambios siguen guardados aquí.');
+      else toast('No se ha podido publicar. Revisa la conexión y prueba otra vez; tus cambios siguen guardados.');
+      setSync(sync.canEdit ? 'error' : 'ro', sync.canEdit ? 'Sin publicar' : 'Solo consulta');
+    }
+    sync.publishing = false; render();
+  }
+  async function startWeb() {
+    setSync('ro', 'Cargando cuadrante…');
+    try {
+      const r = await fetch('datos.json?v=' + Date.now(), { cache: 'no-store' });
+      if (r.ok) { const d = await r.json(); if (d && Array.isArray(d.staff)) { EMB = d; S = JSON.parse(JSON.stringify(d)); migrate(); } }
+    } catch (e) {}
+    sync.canEdit = !!ghToken();
+    if (sync.canEdit) restoreDraft();
+    if (!EMB) setSync('error', 'No se ha podido cargar el cuadrante publicado');
+    else setSync(sync.canEdit ? 'ok' : 'ro', sync.canEdit ? (sync.dirty ? 'Editando · cambios sin publicar' : 'Puedes editar · el equipo solo consulta') : 'Solo consulta');
+    render();
+  }
+
   async function publishNow() {
+    if (WEB) { if (!sync.publishing) return publishWeb(); return; }
     if (!sync.artifact || !PAGE_SOURCE || sync.publishing) { toast('No se puede publicar desde aquí.'); return; }
     sync.publishing = true; render(); setSync('saving', 'Publicando…');
     try { sessionStorage.setItem(KEY + ':week', ymd(ui.week)); } catch (e) {}
@@ -1739,7 +1844,7 @@ tr.past td { opacity: 0.6; }
     render();
   }
 
-  if (SYNC_ON) startSync(); else render();
+  if (SYNC_ON) startSync(); else if (WEB) startWeb(); else render();
   window.addEventListener('beforeunload', e => { if (sync.dirty && !sync.publishing) { e.preventDefault(); e.returnValue = ''; } });
   setInterval(renderNow, 60000);
 })();
