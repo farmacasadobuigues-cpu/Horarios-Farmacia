@@ -2,7 +2,7 @@
 
 Aplicación web para organizar los turnos del equipo de una farmacia comunitaria y las guardias.
 
-**Web pública:** https://farmacasadobuigues-cpu.github.io/Horarios-Farmacia/ (GitHub Pages). El equipo la abre sin cuenta y solo consulta; el cuadrante está en `datos.json`. La propietaria pulsa «Acceso de la propietaria», pega una clave de GitHub (token de acceso con permiso de escritura en *Contents* solo para este repositorio) y al publicar la app guarda `datos.json` en el repositorio.
+**Web pública:** https://farmacasadobuigues-cpu.github.io/Horarios-Farmacia/ (GitHub Pages). Cada persona entra con su usuario y contraseña. El cuadrante se publica cifrado en `datos.enc.json` (AES-GCM); `acceso.json` guarda la llave del cuadrante cifrada con la contraseña de cada usuario (PBKDF2), así que sin una contraseña válida no se puede leer. La propietaria pulsa «Acceso de la propietaria», pega una clave de GitHub (token de acceso con permiso de escritura en *Contents* solo para este repositorio) y al publicar la app guarda `datos.enc.json` en el repositorio. Desde Equipo → «Accesos a la web» crea usuarios y cambia contraseñas.
 
 También funciona publicada en claude.ai: el cuadrante va dentro de la propia página, así que el equipo la abre sin cuenta (también desde el móvil, añadiéndola a la pantalla de inicio) y solo puede consultarla. La propietaria edita y pulsa «Publicar para el equipo»; si no, se publica sola a los 2 minutos sin cambios o al salir de la app. Abierto como archivo suelto (`index.html`), funciona en local y guarda los datos en el navegador.
 

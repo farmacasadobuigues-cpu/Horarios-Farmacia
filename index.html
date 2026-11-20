@@ -256,6 +256,15 @@ textarea { font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; min-
 table.year td { padding-block: 6px; }
 tr.nowrow td { background: var(--accent-soft); }
 .nowrap { white-space: nowrap; }
+body.locked .tabs, body.locked #now, body.locked #main, body.locked #subtitle { display: none; }
+.login { padding: 32px max(16px, env(safe-area-inset-left, 0px)) 48px; display: flex; justify-content: center; }
+.loginbox { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.loginbox .logo { width: 52px; height: 52px; color: var(--brand); }
+:root[data-theme="dark"] .loginbox .logo { color: var(--fg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .loginbox .logo { color: var(--fg); } }
+.loginbox .btn.primary { padding-block: 10px; font-size: 1rem; }
+.accrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.accform { padding: 10px 0 12px; border-bottom: 1px solid var(--line); }
 .ownerfoot { display: flex; justify-content: center; padding-top: 12px; }
 .ownerfoot .linkbtn { color: var(--muted); font-weight: 400; }
 .guardline { margin: 0 12px 10px; padding: 7px 12px; border-radius: 6px; background: var(--r-tit-soft); color: var(--r-tit); font-size: 0.88rem; display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
@@ -901,6 +910,7 @@ tr.past td { opacity: 0.6; }
 
   // ---------- Render: estado actual ----------
   function renderNow() {
+    if (WEB && !AUTH.dk) return;
     const now = new Date();
     const mins = now.getHours() * 60 + now.getMinutes();
     const key = ymd(now);
@@ -1113,9 +1123,11 @@ tr.past td { opacity: 0.6; }
         '</section>' +
         (gone.length ? '<section class="panel"><div class="panel-h"><h2>Bajas</h2></div><div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Fecha de baja</th><th></th></tr></thead><tbody>' + goneRows + '</tbody></table></div></section>' : '') +
       '</div>' +
+      '<div class="stack">' + accessPanel() +
       '<section class="panel"><h2>Requisitos de plantilla</h2><ul class="checks">' +
         checks.map(c => '<li><span class="mark ' + (c.ok ? 'ok' : 'err') + '">' + (c.ok ? '✓' : '!') + '</span><span>' + c.t + '</span></li>').join('') +
       '</ul><p class="note">No se puede dar de baja al último farmacéutico adjunto. Cada turno de entre semana necesita un farmacéutico o una persona responsable de turno. Los sábados rotan entre todo el equipo, siempre con alguien que pueda llevar el sábado. El cuadrante se genera con el turno habitual de cada persona y reparte mostrador, administración y gestión.</p></section>' +
+      '</div>' +
     '</div>';
   }
 
@@ -1234,7 +1246,7 @@ tr.past td { opacity: 0.6; }
     const matesHtml = list => list.map(m => '<span class="yp">' + avatar(m) + esc(m.name.split(' ')[0]) + '</span>').join('');
     const guardTxt = gs => gs.map(g => '<div class="miguard">' + guardLabel(g) + ' · ' + guardRange(g) + '</div>').join('');
     const hero = '<section class="mihero">' +
-      '<div class="mime">' + avatar(p) + '<div><div class="mihello">Hola, ' + esc(p.name.split(' ')[0]) + '</div><button class="linkbtn" data-act="me-change">No soy yo</button></div></div>' +
+      '<div class="mime">' + avatar(p) + '<div><div class="mihello">Hola, ' + esc(p.name.split(' ')[0]) + '</div>' + (WEB ? '<button class="linkbtn" data-act="logout">Cerrar sesión</button>' : '<button class="linkbtn" data-act="me-change">No soy yo</button>') + '</div></div>' +
       '<div class="mitoday"><div class="milabel">Hoy · ' + DAYS[today.getDay()].toLowerCase() + ' ' + shortDate(today) + '</div>' +
         '<div class="mistate k-' + t.kind + '">' + esc(t.text) + (t.range ? ' <span>' + t.range + '</span>' : '') + '</div>' +
         (t.resp ? '<div class="misub">' + esc(t.resp) + (t.mates.length ? ' · con ' + t.mates.map(m => esc(m.name.split(' ')[0])).join(', ') : '') + '</div>' : '') + guardTxt(t.guards) +
@@ -1405,6 +1417,7 @@ tr.past td { opacity: 0.6; }
         '</section>' +
       '</div>' +
       '<div class="stack">' + renderHolidays() +
+      (WEB ? '<section class="panel"><h2>Sesión</h2><p class="note">Has entrado como «' + esc(AUTH.user ? AUTH.user.u : '') + '».</p><div class="actions"><button class="btn" data-act="logout">Cerrar sesión</button></div></section>' : '') +
       (WEB ? '<section class="panel"><h2>Modo edición</h2><p class="note">Estás editando con tu clave de GitHub en este navegador. Si este dispositivo no es tuyo, sal al terminar.</p><div class="actions"><button class="btn" data-act="owner-logout">Salir del modo edición</button></div></section>' : '') +
       '<section class="panel"><h2>Empezar de cero</h2><p class="note">Vuelve al equipo inicial: Ramiro (adjunto), Lucía (técnico, responsable) y Anastasia, Aizane y Lorena (auxiliares).</p><div class="actions">' + reset + '</div></section>' +
       '</div>' +
@@ -1413,6 +1426,7 @@ tr.past td { opacity: 0.6; }
 
   // ---------- Render principal ----------
   function render() {
+    if (WEB && !AUTH.dk) return;
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
     if (!weekHasData(mondayOf(new Date()))) generateWeek(mondayOf(new Date()));
     renderNow();
@@ -1434,13 +1448,143 @@ tr.past td { opacity: 0.6; }
     if (!sync.canEdit) applyReadOnly();
   }
 
+  // ---------- Acceso con usuario y contraseña (web) ----------
+  // El cuadrante se publica cifrado (datos.enc.json, AES-GCM). La llave del cuadrante va guardada en
+  // acceso.json una vez por persona, cifrada con su contraseña (PBKDF2). Sin contraseña no se puede leer.
+  const AUTH = { dk: null, user: null, access: null, box: null };
+  const TE = new TextEncoder(), TD = new TextDecoder();
+  const fromB64 = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const toB64 = buf => { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+  const normUser = u => String(u || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+  async function pwKey(pw, salt, iter) {
+    const base = await crypto.subtle.importKey('raw', TE.encode(pw), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  const dataKey = raw => crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
+  async function unwrapKey(entry, pw) {
+    const k = await pwKey(pw, fromB64(entry.salt), entry.iter);
+    return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(entry.iv) }, k, fromB64(entry.wk)));
+  }
+  async function wrapKey(raw, pw) {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 200000;
+    const k = await pwKey(pw, salt, iter);
+    return { salt: toB64(salt), iv: toB64(iv), iter, wk: toB64(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, raw)) };
+  }
+  async function decryptBox(raw, box) { return TD.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(box.iv) }, await dataKey(raw), fromB64(box.ct))); }
+  async function encryptBox(raw, text) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    return { v: 1, iv: toB64(iv), ct: toB64(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await dataKey(raw), TE.encode(text))) };
+  }
+  const isOwnerUser = () => !!(AUTH.user && AUTH.user.owner);
+  function showLogin(msg) {
+    document.body.classList.add('locked');
+    let el = document.getElementById('login');
+    if (!el) { el = document.createElement('section'); el.id = 'login'; el.className = 'login'; document.body.appendChild(el); }
+    el.innerHTML = '<form id="login-form" class="loginbox" autocomplete="on">' +
+      '<svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" fill="none" stroke="currentColor" stroke-width="4.5"/><text x="32" y="38.5" text-anchor="middle" font-family="Titillium Web, sans-serif" font-weight="600" font-size="25" fill="currentColor">Cb</text><rect x="17" y="45" width="30" height="2.6" rx="1.3" fill="#50c4ca"/></svg>' +
+      '<h2>Cuadrante del equipo</h2><p class="note">Entra con tu usuario y tu contraseña.</p>' +
+      (msg ? '<div class="banner warn">' + esc(msg) + '</div>' : '') +
+      '<div class="field"><label for="lg-user">Usuario</label><input id="lg-user" name="username" autocomplete="username" autocapitalize="none" required></div>' +
+      '<div class="field"><label for="lg-pass">Contraseña</label><input id="lg-pass" name="password" type="password" autocomplete="current-password" required></div>' +
+      '<label class="chk"><input type="checkbox" id="lg-remember" checked> Recordarme en este dispositivo</label>' +
+      '<button class="btn primary" type="submit" id="lg-go">Entrar</button>' +
+      '<p class="note">¿No tienes usuario o has olvidado la contraseña? Pídeselo a la farmacia.</p></form>';
+    el.hidden = false;
+  }
+  function hideLogin() { document.body.classList.remove('locked'); const el = document.getElementById('login'); if (el) el.hidden = true; }
+  async function openWith(raw, username) {
+    const d = JSON.parse(await decryptBox(raw, AUTH.box));
+    AUTH.dk = raw;
+    AUTH.user = (AUTH.access.users || []).find(x => x.u === username) || { u: username };
+    EMB = d; S = JSON.parse(JSON.stringify(d)); migrate();
+    if (AUTH.user.staffId) { ui.me = AUTH.user.staffId; try { localStorage.setItem(KEY + ':me', ui.me); } catch (e) {} }
+    sync.canEdit = isOwnerUser() && !!ghToken();
+    if (sync.canEdit) restoreDraft();
+    hideLogin();
+    setSync(sync.canEdit ? 'ok' : 'ro', sync.canEdit ? (sync.dirty ? 'Editando · cambios sin publicar' : 'Puedes editar · el equipo solo consulta') : (isOwnerUser() ? 'Solo consulta · entra con tu clave para editar' : 'Hola, ' + (AUTH.user.staffId && byId(AUTH.user.staffId) ? byId(AUTH.user.staffId).name.split(' ')[0] : AUTH.user.u)));
+    render();
+  }
+  async function doLogin(username, pw, remember) {
+    const u = normUser(username);
+    const entry = (AUTH.access.users || []).find(x => x.u === u);
+    const btn = document.getElementById('lg-go'); if (btn) { btn.disabled = true; btn.textContent = 'Comprobando…'; }
+    let raw = null;
+    if (entry) { try { raw = await unwrapKey(entry, pw); } catch (e) { raw = null; } }
+    if (!raw) { showLogin('Usuario o contraseña incorrectos.'); const f = document.getElementById('lg-user'); if (f) f.value = username; return; }
+    if (remember) { try { localStorage.setItem(KEY + ':sess', JSON.stringify({ u, dk: toB64(raw) })); } catch (e) {} }
+    try { await openWith(raw, u); } catch (e) { showLogin('No se ha podido abrir el cuadrante. Recarga la página.'); }
+  }
+  function logout() {
+    try { localStorage.removeItem(KEY + ':sess'); localStorage.removeItem(KEY + ':me'); } catch (e) {}
+    location.reload();
+  }
+  // Publica un archivo en el repositorio (solo la propietaria, con su clave de GitHub).
+  async function ghPut(path, text, message, checkRemote) {
+    const token = ghToken();
+    if (!token) throw { code: 'auth' };
+    const api = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + path;
+    const headers = { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' };
+    const cur = await fetch(api + '?ref=' + GH_BRANCH + '&t=' + Date.now(), { headers, cache: 'no-store' });
+    if (cur.status === 401 || cur.status === 403) throw { code: 'auth' };
+    let sha;
+    if (cur.ok) { const j = await cur.json(); sha = j.sha; if (checkRemote) await checkRemote(j); }
+    const body = { message, content: b64enc(text), branch: GH_BRANCH };
+    if (sha) body.sha = sha;
+    const r = await fetch(api, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, headers), body: JSON.stringify(body) });
+    if (r.status === 401 || r.status === 403) throw { code: 'auth' };
+    if (r.status === 409) throw { code: 'conflict' };
+    if (!r.ok) throw { code: 'upstream' };
+  }
+  // Accesos: la propietaria pone usuario y contraseña a cada persona.
+  function accessPanel() {
+    if (!WEB || !sync.canEdit || !AUTH.access) return '';
+    const users = AUTH.access.users || [];
+    const rows = [{ id: 'owner', name: 'Farmacia (propietaria)', p: null }].concat(activeStaff().map(p => ({ id: p.id, name: p.name, p })));
+    const userFor = id => users.find(x => id === 'owner' ? x.owner : x.staffId === id);
+    const form = id => {
+      const cur = userFor(id); const r = rows.find(x => x.id === id);
+      const sug = cur ? cur.u : normUser(r.p ? r.p.name.split(' ')[0] : 'farmacia');
+      return '<form class="grid accform" id="acc-form" data-id="' + id + '" autocomplete="off">' +
+        '<div class="field"><label for="acc-user">Usuario</label><input id="acc-user" required value="' + esc(sug) + '" autocapitalize="none"></div>' +
+        '<div class="field"><label for="acc-pass">Contraseña nueva</label><input id="acc-pass" required minlength="6" placeholder="mínimo 6 caracteres"></div>' +
+        '<button class="btn primary" type="submit">Guardar acceso</button><button class="btn" type="button" data-act="acc-cancel">Cancelar</button></form>';
+    };
+    return '<section class="panel edit-only"><h2>Accesos a la web</h2>' +
+      '<p class="note">Cada persona entra con su usuario y su contraseña. Pásaselos en persona o por mensaje privado. Si alguien olvida la suya, ponle una nueva aquí.</p>' +
+      rows.map(r => {
+        const cur = userFor(r.id);
+        return '<div class="accrow"><span class="person">' + (r.p ? avatar(r.p) : '') + '<span class="pcap">' + esc(r.name) + '<small>' + (cur ? 'Usuario: <strong>' + esc(cur.u) + '</strong>' : 'Sin acceso') + '</small></span></span>' +
+          '<span class="rowact"><button class="btn sm" data-act="acc-set" data-id="' + r.id + '">' + (cur ? 'Nueva contraseña' : 'Crear acceso') + '</button>' +
+          (cur && r.id !== 'owner' ? '<button class="btn sm danger" data-act="acc-del" data-id="' + r.id + '">Quitar</button>' : '') + '</span></div>' +
+          (ui.accFor === r.id ? form(r.id) : '');
+      }).join('') + '</section>';
+  }
+  async function saveAccess(id, username, pw) {
+    const u = normUser(username);
+    if (!u || pw.length < 6) { toast('Pon un usuario y una contraseña de al menos 6 caracteres.'); return; }
+    const users = (AUTH.access.users || []).slice();
+    if (users.some(x => x.u === u && (id === 'owner' ? !x.owner : x.staffId !== id))) { toast('Ese usuario ya lo tiene otra persona.'); return; }
+    const entry = Object.assign({ u }, id === 'owner' ? { owner: true } : { staffId: id }, await wrapKey(AUTH.dk, pw));
+    const next = users.filter(x => id === 'owner' ? !x.owner : x.staffId !== id).concat(entry);
+    await publishAccess(next, 'Acceso guardado. Usuario «' + u + '»: pásale la contraseña en privado.');
+  }
+  async function publishAccess(users, okMsg) {
+    toast('Guardando accesos…');
+    try {
+      await ghPut('acceso.json', JSON.stringify({ v: 1, users }, null, 1), 'Actualiza los accesos de la app');
+      AUTH.access = { v: 1, users }; ui.accFor = null; render(); toast(okMsg);
+    } catch (e) {
+      toast(e && e.code === 'auth' ? 'Tu clave de GitHub no sirve para guardar. Vuelve a entrar con ella.' : 'No se han podido guardar los accesos. Prueba otra vez.');
+    }
+  }
+
   // Acceso de la propietaria en la web: una clave de GitHub guardada solo en su navegador.
   const ghToken = () => { try { return localStorage.getItem(KEY + ':gh') || ''; } catch (e) { return ''; } };
   function ownerFooter() {
-    if (sync.canEdit) return '';
+    if (sync.canEdit || !isOwnerUser()) return '';
     if (!ui.ownerLogin) return '<div class="ownerfoot"><button class="linkbtn" data-act="owner-login">Acceso de la propietaria</button></div>';
     return '<section class="panel ownerbox"><h2>Acceso de la propietaria</h2>' +
-      '<p class="note">Pega tu clave de GitHub para editar y publicar. Se guarda solo en este navegador.</p>' +
+      '<p class="note">Para editar y publicar, pega tu clave de GitHub. Se guarda solo en este navegador.</p>' +
       '<form class="grid" id="owner-form" autocomplete="off"><div class="field"><label for="gh-token">Clave de GitHub</label><input id="gh-token" type="password" required placeholder="github_pat_…"></div>' +
       '<button class="btn primary" type="submit">Entrar</button><button class="btn" type="button" data-act="owner-cancel">Cancelar</button></form></section>';
   }
@@ -1451,7 +1595,7 @@ tr.past td { opacity: 0.6; }
       if (!j || !j.permissions || !j.permissions.push) { toast('Esa clave no tiene permiso para guardar en el repositorio de la app.'); return; }
     } catch (e) { toast('No se ha podido comprobar la clave. Revisa la conexión.'); return; }
     try { localStorage.setItem(KEY + ':gh', token); } catch (e) {}
-    ui.ownerLogin = false; sync.canEdit = true;
+    ui.ownerLogin = false; sync.canEdit = isOwnerUser();
     restoreDraft();
     setSync('ok', sync.dirty ? 'Editando · cambios sin publicar' : 'Puedes editar · el equipo solo consulta');
     render(); toast('Listo: ya puedes editar. Los cambios se publican para el equipo.');
@@ -1465,7 +1609,7 @@ tr.past td { opacity: 0.6; }
   }
 
   // Quien solo consulta ve el cuadrante sin controles de edición.
-  const VIEW_ACTS = ['prev', 'next', 'thisweek', 'goto-week', 'year-prev', 'year-next', 'me-pick', 'me-change', 'owner-login', 'owner-cancel'];
+  const VIEW_ACTS = ['prev', 'next', 'thisweek', 'goto-week', 'year-prev', 'year-next', 'me-pick', 'me-change', 'owner-login', 'owner-cancel', 'logout'];
   function applyReadOnly() {
     const m = document.getElementById('main');
     const alta = m.querySelector('#alta-form'); if (alta && alta.closest('.panel')) alta.closest('.panel').remove();
@@ -1524,6 +1668,14 @@ tr.past td { opacity: 0.6; }
       case 'publish': publishNow(); return;
       case 'owner-login': ui.ownerLogin = true; render(); setTimeout(() => { const t = document.getElementById('gh-token'); if (t) t.focus(); }, 0); return;
       case 'owner-cancel': ui.ownerLogin = false; break;
+      case 'logout': logout(); return;
+      case 'acc-set': ui.accFor = id; break;
+      case 'acc-cancel': ui.accFor = null; break;
+      case 'acc-del': {
+        const users = (AUTH.access.users || []).filter(x => x.staffId !== id);
+        publishAccess(users, 'Acceso quitado. Si esa persona deja la farmacia, pídeme también cambiar la llave del cuadrante.');
+        return;
+      }
       case 'owner-logout':
         try { localStorage.removeItem(KEY + ':gh'); } catch (err) {}
         sync.canEdit = false; ui.tab = 'mi'; setSync('ro', 'Solo consulta'); toast('Has salido del modo edición en este navegador.'); break;
@@ -1667,6 +1819,14 @@ tr.past td { opacity: 0.6; }
   document.addEventListener('submit', e => {
     e.preventDefault();
     userAct();
+    if (e.target.id === 'login-form') {
+      doLogin(document.getElementById('lg-user').value, document.getElementById('lg-pass').value, document.getElementById('lg-remember').checked);
+      return;
+    }
+    if (e.target.id === 'acc-form') {
+      saveAccess(e.target.dataset.id, document.getElementById('acc-user').value, document.getElementById('acc-pass').value);
+      return;
+    }
     if (e.target.id === 'owner-form') {
       const tk = document.getElementById('gh-token').value.trim();
       if (tk) ownerLogin(tk);
@@ -1753,30 +1913,18 @@ tr.past td { opacity: 0.6; }
   const b64enc = str => { const bytes = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); };
   const b64dec = b64 => { const bin = atob(b64.replace(/\s/g, '')); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); };
   async function publishWeb() {
-    const token = ghToken();
-    if (!token) { sync.canEdit = false; toast('Vuelve a entrar con tu clave para publicar.'); render(); return; }
+    if (!ghToken() || !AUTH.dk) { sync.canEdit = false; toast('Vuelve a entrar con tu clave para publicar.'); render(); return; }
     sync.publishing = true; render(); setSync('saving', 'Publicando…');
-    const api = 'https://api.github.com/repos/' + GH_REPO + '/contents/datos.json';
-    const headers = { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' };
     try {
-      const cur = await fetch(api + '?ref=' + GH_BRANCH + '&t=' + Date.now(), { headers, cache: 'no-store' });
-      if (cur.status === 401 || cur.status === 403) throw { code: 'auth' };
-      let sha;
-      if (cur.ok) {
-        const j = await cur.json(); sha = j.sha;
-        let remoteRev = null;
-        try { remoteRev = JSON.parse(b64dec(j.content || '')).rev || null; } catch (e) {}
-        if (EMB && remoteRev && EMB.rev && remoteRev !== EMB.rev) throw { code: 'conflict' };
-      }
       const state = JSON.parse(JSON.stringify(S));
       state.rev = new Date().toISOString();
-      const body = { message: 'Actualiza el cuadrante desde la app', content: b64enc(JSON.stringify(state)), branch: GH_BRANCH };
-      if (sha) body.sha = sha;
-      const r = await fetch(api, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, headers), body: JSON.stringify(body) });
-      if (r.status === 401 || r.status === 403) throw { code: 'auth' };
-      if (r.status === 409) throw { code: 'conflict' };
-      if (!r.ok) throw { code: 'upstream' };
-      EMB = state;
+      const box = await encryptBox(AUTH.dk, JSON.stringify(state));
+      await ghPut('datos.enc.json', JSON.stringify(box), 'Actualiza el cuadrante desde la app', async j => {
+        let remoteRev = null;
+        try { remoteRev = JSON.parse(await decryptBox(AUTH.dk, JSON.parse(b64dec(j.content || '')))).rev || null; } catch (e) {}
+        if (EMB && remoteRev && EMB.rev && remoteRev !== EMB.rev) throw { code: 'conflict' };
+      });
+      EMB = state; AUTH.box = box;
       try { localStorage.removeItem(KEY + ':draft'); } catch (e) {}
       sync.dirty = false; clearTimeout(sync.autoTimer); sync.autoAt = 0;
       setSync('ok', 'Publicado · el equipo lo verá en 1 o 2 minutos');
@@ -1791,16 +1939,20 @@ tr.past td { opacity: 0.6; }
     sync.publishing = false; render();
   }
   async function startWeb() {
-    setSync('ro', 'Cargando cuadrante…');
+    document.body.classList.add('locked');
+    setSync('ro', 'Cargando…');
     try {
-      const r = await fetch('datos.json?v=' + Date.now(), { cache: 'no-store' });
-      if (r.ok) { const d = await r.json(); if (d && Array.isArray(d.staff)) { EMB = d; S = JSON.parse(JSON.stringify(d)); migrate(); } }
+      const [a, d] = await Promise.all([fetch('acceso.json?v=' + Date.now(), { cache: 'no-store' }), fetch('datos.enc.json?v=' + Date.now(), { cache: 'no-store' })]);
+      if (a.ok) AUTH.access = await a.json();
+      if (d.ok) AUTH.box = await d.json();
     } catch (e) {}
-    sync.canEdit = !!ghToken();
-    if (sync.canEdit) restoreDraft();
-    if (!EMB) setSync('error', 'No se ha podido cargar el cuadrante publicado');
-    else setSync(sync.canEdit ? 'ok' : 'ro', sync.canEdit ? (sync.dirty ? 'Editando · cambios sin publicar' : 'Puedes editar · el equipo solo consulta') : 'Solo consulta');
-    render();
+    if (!AUTH.access || !AUTH.box) { showLogin('No se ha podido cargar el cuadrante. Revisa la conexión y recarga la página.'); return; }
+    let sess = null;
+    try { sess = JSON.parse(localStorage.getItem(KEY + ':sess')); } catch (e) {}
+    if (sess && sess.dk && (AUTH.access.users || []).some(x => x.u === sess.u)) {
+      try { await openWith(fromB64(sess.dk), sess.u); return; } catch (e) { try { localStorage.removeItem(KEY + ':sess'); } catch (er) {} }
+    }
+    showLogin();
   }
 
   async function publishNow() {
