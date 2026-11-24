@@ -616,6 +616,18 @@ tr.past td { opacity: 0.6; }
     S.guards = S.guards || [];
     S.version = 16;
   }
+  if (S.version < 17) {
+    // Sábados: los que hacen tarde esa semana + 1 persona de mañana (3 en total).
+    S.settings.sat = Object.assign({ close: '14:00' }, S.settings.sat, { min: 3, mode: 'tarde' });
+    const t = ymd(mondayOf(new Date()));
+    Object.keys(S.schedule).forEach(k => { if (k >= t) delete S.schedule[k]; });
+    S.version = 17;
+  }
+  if (S.version < 18) {
+    // La app empieza a mostrarse en las dos últimas semanas de diciembre de 2026.
+    S.settings.start = '2026-12-21';
+    S.version = 18;
+  }
   }
   migrate();
   function save() {
@@ -706,6 +718,7 @@ tr.past td { opacity: 0.6; }
   // y siempre al menos una persona que pueda llevar el sábado.
   const SAT_ANCHOR = new Date(2026, 10, 16);
   function satRotation(monday) {
+    if (S.settings.sat.mode === 'tarde') return satAfternoon(monday);
     const team = activeStaff().filter(p => p.role !== 'estudiante');
     const n = Math.min(S.settings.sat.min, team.length);
     const count = {}, last = {};
@@ -725,6 +738,24 @@ tr.past td { opacity: 0.6; }
       pickNow = chosen;
     }
     return pickNow;
+  }
+  // Fecha desde la que se muestra el cuadrante (antes, nada).
+  const startDate = () => (S.settings && S.settings.start) ? parse(S.settings.start) : null;
+  const beforeStart = d => { const sd = startDate(); return !!sd && ymd(d) < ymd(sd); };
+  const startText = () => { const sd = startDate(); return DAYS[sd.getDay()].toLowerCase() + ' ' + sd.getDate() + ' de ' + ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][sd.getMonth()] + ' de ' + sd.getFullYear(); };
+
+  // Sábado del equipo de tarde: quienes hacen tarde esa semana y, hasta completar, personas
+  // de mañana que no son responsables, por turnos semana a semana.
+  function satAfternoon(monday) {
+    const team = activeStaff().filter(p => p.role !== 'estudiante');
+    const tarde = team.filter(p => effPref(p, monday) === 'T');
+    const extraN = Math.max(0, S.settings.sat.min - tarde.length);
+    let pool = team.filter(p => effPref(p, monday) !== 'T' && !isLead(p));
+    if (pool.length < extraN) pool = team.filter(p => !tarde.includes(p));
+    const step = Math.max(0, Math.round((monday - SAT_ANCHOR) / (7 * 864e5)));
+    const extra = [];
+    for (let k = 0; k < extraN && pool.length; k++) extra.push(pool[(step * extraN + k) % pool.length]);
+    return tarde.concat(extra.filter((p, i, a) => a.indexOf(p) === i));
   }
   const initials = p => { const w = p.name.trim().split(/\s+/); return w.length > 1 ? (w[0][0] + w[1][0]).toUpperCase() : w[0].slice(0, 2); };
   // ---------- Avatares frikis (dibujos propios, homenaje en broma) ----------
@@ -929,7 +960,10 @@ tr.past td { opacity: 0.6; }
     const nowShifts = dayShifts(key).filter(sh => { const [a, b] = shTimes(key, sh); return mins >= a && mins < b; });
     const shiftNow = nowShifts[nowShifts.length - 1];
     const day = S.schedule[key];
-    if (isOpenDay(now) && shiftNow && day) {
+    if (beforeStart(now)) {
+      state = 'Nuevo cuadrante';
+      people = '<span class="soft">Empieza el ' + startText() + '.</span>';
+    } else if (isOpenDay(now) && shiftNow && day) {
       state = nowShifts.length > 1 ? 'Cambio de turno <span class="mono muted">' + hm(shTimes(key, 'T')[0]) + '–' + hm(shTimes(key, 'M')[1]) + '</span>'
         : (keySat(key) ? 'Sábado' : 'Turno de ' + SH_LABEL[shiftNow].toLowerCase()) + ' <span class="mono muted">' + shRange(key, shiftNow) + '</span>';
       people = [].concat(...nowShifts.map(sh => day[sh] || [])).filter(a => !onVac(a.id, key)).map(a => {
@@ -1159,7 +1193,12 @@ tr.past td { opacity: 0.6; }
   function renderAnual() {
     const year = ui.year;
     ensureYear(year);
-    const mondays = yearMondays(year);
+    let mondays = yearMondays(year);
+    const sm0 = startDate() && mondayOf(startDate());
+    if (sm0) {
+      mondays = mondays.filter(m => m >= sm0);
+      if (sm0.getFullYear() < year && mondays.length && ymd(addDays(sm0, 7)) === ymd(mondays[0])) mondays.unshift(sm0);
+    }
     const tot = {};
     const rows = mondays.map(m => {
       const vacWeek = id => [0, 1, 2, 3, 4, 5].some(i => onVac(id, ymd(addDays(m, i))));
@@ -1248,7 +1287,9 @@ tr.past td { opacity: 0.6; }
       return '<section class="panel mipick"><h2>¿Quién eres?</h2><p class="note">Elige tu nombre y verás directamente tu horario. Se recuerda en este móvil.</p>' +
         '<div class="mipeople">' + people.map(x => '<button class="mibtn" data-act="me-pick" data-id="' + x.id + '">' + avatar(x) + '<span>' + esc(x.name.split(' ')[0]) + '</span></button>').join('') + '</div></section>';
     }
-    const today = new Date();
+    const realToday = new Date();
+    const early = beforeStart(realToday);
+    const today = early ? startDate() : realToday;
     // Asegura el cuadrante de las próximas semanas (se calcula igual para todos).
     for (let w = 0; w < 27; w++) { const m = addDays(mondayOf(today), w * 7); if (!weekHasData(m)) generateWeek(m); }
     const days = [];
@@ -1258,7 +1299,7 @@ tr.past td { opacity: 0.6; }
     const guardTxt = gs => gs.map(g => '<div class="miguard">' + guardLabel(g) + ' · ' + guardRange(g) + '</div>').join('');
     const hero = '<section class="mihero">' +
       '<div class="mime">' + avatar(p) + '<div><div class="mihello">Hola, ' + esc(p.name.split(' ')[0]) + '</div>' + (WEB ? '<button class="linkbtn" data-act="logout">Cerrar sesión</button>' : '<button class="linkbtn" data-act="me-change">No soy yo</button>') + '</div></div>' +
-      '<div class="mitoday"><div class="milabel">Hoy · ' + DAYS[today.getDay()].toLowerCase() + ' ' + shortDate(today) + '</div>' +
+      '<div class="mitoday"><div class="milabel">' + (early ? 'Primer día · ' : 'Hoy · ') + DAYS[today.getDay()].toLowerCase() + ' ' + shortDate(today) + '</div>' +
         '<div class="mistate k-' + t.kind + '">' + esc(t.text) + (t.range ? ' <span>' + t.range + '</span>' : '') + '</div>' +
         (t.resp ? '<div class="misub">' + esc(t.resp) + (t.mates.length ? ' · con ' + t.mates.map(m => esc(m.name.split(' ')[0])).join(', ') : '') + '</div>' : '') + guardTxt(t.guards) +
       '</div></section>';
@@ -1413,10 +1454,15 @@ tr.past td { opacity: 0.6; }
           '<div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">' +
             '<div class="field"><label for="set-sat-close">Cierre del sábado</label><select id="set-sat-close" data-act="set-sat-close">' +
               ['12:00', '13:00', '13:30', '14:00', '14:30', '15:00'].map(o => '<option' + (o === S.settings.sat.close ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></div>' +
+            '<div class="field"><label for="set-sat-mode">Quién hace el sábado</label><select id="set-sat-mode" data-act="set-sat-mode">' +
+              '<option value="tarde"' + (S.settings.sat.mode === 'tarde' ? ' selected' : '') + '>Los de la tarde de esa semana + mañana</option>' +
+              '<option value="rota"' + (S.settings.sat.mode !== 'tarde' ? ' selected' : '') + '>Rotación entre todo el equipo</option></select></div>' +
             '<div class="field"><label for="set-sat-min">Personas el sábado</label><select id="set-sat-min" data-act="set-sat-min">' +
               [1, 2, 3, 4].map(n => '<option' + (n === S.settings.sat.min ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div>' +
           '</div>' +
-          '<p class="note">Sábado <span class="mono">' + satRange() + '</span>. Rotan todas las personas por igual y siempre entra al menos una que pueda llevar el sábado (se marca en Equipo).</p>' +
+          '<p class="note">Sábado <span class="mono">' + satRange() + '</span>. ' + (S.settings.sat.mode === 'tarde'
+            ? 'Hacen el sábado quienes están de tarde esa semana; hasta completar, entra por turnos alguien de mañana que no es responsable.'
+            : 'Rotan todas las personas por igual y siempre entra al menos una que pueda llevar el sábado (se marca en Equipo).') + '</p>' +
           '<div class="field"><label>Días de apertura</label><div class="daychecks">' +
             order.map(d => '<label><input type="checkbox" data-act="set-day" value="' + d + '"' + (S.settings.days.includes(d) ? ' checked' : '') + '> ' + DAYS[d] + '</label>').join('') +
           '</div></div>' +
@@ -1440,7 +1486,10 @@ tr.past td { opacity: 0.6; }
   function render() {
     if (WEB && !AUTH.dk) return;
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
-    if (!weekHasData(mondayOf(new Date()))) generateWeek(mondayOf(new Date()));
+    const sd = startDate();
+    if (sd) { const sm = mondayOf(sd); const y0 = addDays(sm, 6).getFullYear(); if (ui.week < sm) ui.week = sm; if (ui.year < y0) ui.year = y0; }
+    const curMon = sd && beforeStart(new Date()) ? mondayOf(sd) : mondayOf(new Date());
+    if (!weekHasData(curMon)) generateWeek(curMon);
     renderNow();
     const views = { mi: renderMi, guardias: renderGuardias, cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, vacaciones: renderVacaciones, ajustes: renderAjustes };
     document.getElementById('tab-ajustes').hidden = !sync.canEdit;
@@ -1823,6 +1872,11 @@ tr.past td { opacity: 0.6; }
       list.push({ id: p.id, resp: p.role === 'estudiante' ? 'practicas' : hasCounter && !isPharm(p) ? 'mostrador' : (isPharm(p) && list.some(x => isPharm(byId(x.id))) ? 'gestion' : 'mostrador') });
     } else if (act === 'set-sat-close') {
       S.settings.sat.close = el.value;
+    } else if (act === 'set-sat-mode') {
+      S.settings.sat.mode = el.value;
+      const t = ymd(mondayOf(new Date()));
+      Object.keys(S.schedule).forEach(k => { if (k >= t && keySat(k)) delete S.schedule[k]; });
+      Object.keys(S.schedule).filter(k => k >= t).map(k => ymd(mondayOf(parse(k)))).filter((v, i, a) => a.indexOf(v) === i).forEach(w => generateWeek(parse(w)));
     } else if (act === 'set-sat-min') {
       S.settings.sat.min = Number(el.value);
     } else if (act === 'set-min') {

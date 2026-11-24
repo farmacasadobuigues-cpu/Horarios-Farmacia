@@ -13,7 +13,7 @@ Colores y tipografía (Titillium Web) del manual de identidad de la farmacia, co
 ## Qué hace
 
 - **Cuadrante semanal**: mañana de 08:30 a 15:00 y tarde de 14:30 a 21:00 (media hora de solape en el cambio de turno). Genera automáticamente 3 personas por turno con un farmacéutico o una persona responsable de turno, y reparte la responsabilidad de cada uno: mostrador, administración o gestión. Cada persona hace el mismo turno toda la semana. Todo se puede cambiar a mano y avisa si un turno queda incompleto, sin responsable o con alguien doblando turno.
-- **Sábados**: de 09:00 a 14:00 con 2 personas. Rotan todas por igual (2 sábados de cada 5) y siempre entra al menos una persona que pueda llevar el sábado (Ramiro, Lucía o Anastasia), de modo que Aizane y Lorena no coinciden solas.
+- **Sábados**: de 09:00 a 14:00 con 3 personas: quienes hacen tarde esa semana y, por turnos, una persona de mañana que no es responsable. En Ajustes se puede volver a la rotación entre todo el equipo.
 - **Año**: vista de todas las semanas del año con quién hace mañana, tarde y sábado, y el total de horas por persona. El año 2027 sigue el Excel «HORARIO 2027 turnos v2»: Ramiro y Luci alternan por semanas (Ramiro empieza de tarde el 4 de enero, siguiendo la rutina de 2026), Lorena y Aizane de mañana y Anastasia de tarde.
 - **Festivos**: nacionales, autonómicos de la Comunitat Valenciana (San José, Lunes de Pascua y 9 de octubre) y locales (5 de agosto y 22 de octubre); la farmacia cierra y no se mueven los turnos: si un sábado es festivo, quienes tenían ese sábado libran. Se editan en Ajustes.
 - **Mi horario**: cada persona elige quién es (se recuerda en su móvil) y ve su día de hoy, sus próximos 14 días, sus sábados, sus vacaciones y sus guardias.
