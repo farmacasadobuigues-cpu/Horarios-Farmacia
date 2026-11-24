@@ -268,44 +268,51 @@ table.year td { padding-block: 6px; }
 tr.nowrow td { background: var(--accent-soft); }
 .nowrap { white-space: nowrap; }
 /* Mes */
-.month { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-.mdows, .mgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-.mdows span { padding: 8px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--line); text-align: center; }
-.mcell { min-height: 118px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.mcell:nth-child(7n) { border-right: 0; }
-.mcell.pad { background: var(--surface-2); }
-.mcell.sun { background: var(--surface-2); }
-.mcell.today { box-shadow: inset 0 0 0 2px var(--accent); }
-.mhead { display: flex; align-items: baseline; gap: 6px; border: 0; background: none; padding: 0; cursor: pointer; color: inherit; text-align: left; font: inherit; }
-.mhead:hover .mnum { color: var(--accent-ink); }
-.mdow { display: none; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-.mnum { font-weight: 700; font-size: 1.05rem; color: var(--brand); }
-:root[data-theme="dark"] .mnum { color: var(--fg); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mnum { color: var(--fg); } }
-.mmine { margin-left: auto; font-size: 0.68rem; font-weight: 700; padding: 0 6px; border-radius: 4px; color: var(--surface); background: var(--k, var(--muted)); }
+.wmonth { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.whead, .wrow { display: grid; grid-template-columns: 120px minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1fr); }
+.whead span { padding: 8px 10px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--line); }
+.wrow { border-bottom: 1px solid var(--line); }
+.wrow:last-child { border-bottom: 0; }
+.wrow.now { background: var(--accent-soft); }
+.wrow > * { padding: 10px; min-width: 0; }
+.wcol + .wcol, .wdate + .wcol { border-left: 1px solid var(--line); }
+.wdate { border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.wdate strong { font-size: 1.05rem; color: var(--brand); }
+:root[data-theme="dark"] .wdate strong { color: var(--fg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .wdate strong { color: var(--fg); } }
+.wdate span { font-size: 0.78rem; color: var(--muted); }
+.wdate:hover strong { color: var(--accent-ink); }
+.wcap { display: none; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.wcol { display: flex; flex-direction: column; gap: 4px; }
+.wnotes { flex-direction: row; flex-wrap: wrap; align-content: flex-start; }
+.mmine { margin-top: 4px; font-size: 0.72rem; font-weight: 700; padding: 1px 7px; border-radius: 4px; color: #fff !important; background: var(--k, var(--muted)); }
 .mrow { display: flex; gap: 4px; align-items: flex-start; }
 .mlab { flex: none; width: 16px; height: 16px; border-radius: 3px; display: inline-grid; place-items: center; font-size: 0.66rem; font-weight: 700; color: #fff; background: var(--brand-2); }
 .mlab.sh-M { background: var(--brand); } .mlab.sh-T { background: var(--accent-ink); }
-.mppl { display: flex; flex-wrap: wrap; gap: 2px 4px; min-width: 0; }
-.mchip { display: inline-flex; align-items: center; gap: 3px; font-size: 0.74rem; font-weight: 600; white-space: nowrap; }
-.mchip .av { width: 16px; height: 16px; box-shadow: none; border-radius: 30%; }
-.mchip.me { background: var(--accent-soft); color: var(--accent-ink); border-radius: 4px; padding: 0 4px 0 1px; }
+.mppl { display: flex; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.mchip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.86rem; font-weight: 600; white-space: nowrap; }
+.mchip .av { width: 22px; height: 22px; box-shadow: none; border-radius: 30%; }
+.mchip.me { background: var(--accent-soft); color: var(--accent-ink); border-radius: 4px; padding: 0 5px 0 1px; }
+.wrow.now .mchip.me { background: var(--surface); }
 .mchip.vac { opacity: 0.45; text-decoration: line-through; }
-.mnote { font-size: 0.74rem; color: var(--muted); }
+.mnote { font-size: 0.8rem; color: var(--muted); }
 .mnote.hol { color: var(--warn); font-weight: 700; }
-.mnote.guard { color: var(--r-tit); font-weight: 700; }
+.mtag { font-size: 0.76rem; font-weight: 700; padding: 1px 7px; border-radius: 4px; background: var(--surface-2); color: var(--muted); }
+.mtag.hol { background: var(--warn-soft); color: var(--warn); }
+.mtag.vac { background: var(--r-aux-soft); color: var(--r-aux); }
+.mtag.guard { background: var(--r-tit-soft); color: var(--r-tit); }
 @media (max-width: 760px) {
-  .mdows { display: none; }
-  .mgrid { grid-template-columns: 1fr; }
-  .mcell { min-height: 0; border-right: 0; flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 6px 10px; padding: 8px 10px; }
-  .mcell.pad { display: none; }
-  .mhead { width: 64px; flex-direction: column; gap: 0; }
-  .mdow { display: inline; }
-  .mmine { margin-left: 0; margin-top: 2px; }
-  .mcell > .mrow, .mcell > .mnote { flex: 1 1 calc(100% - 80px); }
-  .mrow + .mrow { margin-left: 74px; }
-  .mchip { font-size: 0.82rem; } .mchip .av { width: 20px; height: 20px; }
+  .whead { display: none; }
+  .wrow { grid-template-columns: 1fr 1fr; }
+  .wdate { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 8px; border-bottom: 1px solid var(--line); }
+  .wdate .mmine { margin: 0 0 0 auto; }
+  .wcol + .wcol, .wdate + .wcol { border-left: 0; }
+  .wrow > div.wcol:nth-of-type(2) { border-left: 1px solid var(--line); }
+  .wrow > div.wcol:nth-of-type(3), .wrow > div.wcol:nth-of-type(4) { grid-column: 1 / -1; border-top: 1px solid var(--line); }
+  .wcap { display: block; }
+  .wnotes.empty { display: none; }
 }
+
 body.locked .tabs, body.locked #now, body.locked #main, body.locked #subtitle { display: none; }
 .login { padding: 32px max(16px, env(safe-area-inset-left, 0px)) 48px; display: flex; justify-content: center; }
 .loginbox { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; display: flex; flex-direction: column; gap: 14px; }
@@ -1304,33 +1311,44 @@ tr.past td { opacity: 0.6; }
     if (minM && ui.month < minM) ui.month = minM;
     const [y, m] = ui.month.split('-').map(Number);
     const first = new Date(y, m - 1, 1), last = new Date(y, m, 0);
-    // Asegura el cuadrante de las semanas del mes.
-    for (let w = mondayOf(first); w <= last; w = addDays(w, 7)) if (!weekHasData(w) && !(sd && addDays(w, 6) < sd)) generateWeek(w);
     const me = ui.me && byId(ui.me) ? ui.me : null;
-    const chips = (list, key) => list.map(a => byId(a.id)).filter(Boolean).map(p => {
-      const vac = onVac(p.id, key);
-      return '<span class="mchip' + (p.id === me ? ' me' : '') + (vac ? ' vac' : '') + '" title="' + esc(p.name + (vac ? ' · vacaciones' : '')) + '">' + avatar(p) + '<span>' + esc(p.name.split(' ')[0]) + '</span></span>';
-    }).join('');
-    const cells = [];
-    for (let i = 0; i < (first.getDay() + 6) % 7; i++) cells.push('<div class="mcell pad"></div>');
-    for (let d = new Date(first); d <= last; d = addDays(d, 1)) {
-      const key = ymd(d), hol = holidayOf(d), day = S.schedule[key];
-      const isToday = key === todayKey();
-      let body = '';
-      if (sd && d < sd) body = '<div class="mnote">—</div>';
-      else if (hol) body = '<div class="mnote hol">Festivo · ' + esc(hol) + '</div>';
-      else if (!isOpenDay(d) || !day) body = '<div class="mnote">Cerrado</div>';
-      else {
-        body = dayShifts(key).map(sh => '<div class="mrow"><span class="mlab sh-' + sh + '">' + (keySat(key) && !keyFullSat(key) ? 'S' : sh) + '</span><div class="mppl">' + chips(day[sh] || [], key) + '</div></div>').join('');
-        const gs = guardsOn(key);
-        if (gs.length) body += '<div class="mnote guard">' + gs.map(guardLabel).join(', ') + '</div>';
-      }
+    const ppl = (list, key) => list.map(a => byId(a.id)).filter(Boolean).map(p =>
+      '<span class="mchip' + (p.id === me ? ' me' : '') + (key && onVac(p.id, key) ? ' vac' : '') + '" title="' + esc(p.name) + '">' + avatar(p) + '<span>' + esc(p.name.split(' ')[0]) + '</span></span>').join('');
+    const rows = [];
+    // Una fila por semana: entre semana todos los días son iguales; el sábado va aparte.
+    for (let w = mondayOf(first); w <= last; w = addDays(w, 7)) {
+      if (sd && addDays(w, 6) < sd) continue;
+      if (!weekHasData(w)) generateWeek(w);
+      const days = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(w, i));
+      const inMonth = d => d.getMonth() === m - 1;
+      const wk = days.slice(0, 5).map(ymd).find(k => S.schedule[k] && (S.schedule[k].M || []).length && !holidayOf(parse(k)));
+      const satD = days[5], satK = ymd(satD), satDay = S.schedule[satK];
+      const shown = days.filter(inMonth);
+      const label = shown[0].getDate() + (shown.length > 1 ? '–' + shown[shown.length - 1].getDate() : '') + ' ' + MONTHS[m - 1];
+      const notes = [];
+      days.filter(d => holidayOf(d)).forEach(d => notes.push('<span class="mtag hol">Festivo ' + DAYS[d.getDay()].slice(0, 3) + ' ' + d.getDate() + '</span>'));
+      const vacs = (S.vacations || []).filter(v => v.from <= ymd(days[6]) && v.to >= ymd(days[0]));
+      vacs.forEach(v => { const p = byId(v.staffId); if (p) notes.push('<span class="mtag vac">' + esc(p.name.split(' ')[0]) + ' de vacaciones</span>'); });
+      days.forEach(d => guardsOn(ymd(d)).forEach(g => notes.push('<span class="mtag guard">' + guardLabel(g) + ' ' + DAYS[d.getDay()].slice(0, 3) + ' ' + d.getDate() + '</span>')));
+      let satHtml;
+      if (holidayOf(satD)) satHtml = '<span class="mnote hol">Festivo</span>';
+      else if (!satDay) satHtml = '<span class="mnote">Cerrado</span>';
+      else if (keyFullSat(satK)) satHtml = '<div class="mrow"><span class="mlab sh-M">M</span><div class="mppl">' + ppl(satDay.M || [], satK) + '</div></div><div class="mrow"><span class="mlab sh-T">T</span><div class="mppl">' + ppl(satDay.T || [], satK) + '</div></div>';
+      else satHtml = '<div class="mppl">' + ppl(satDay.M || [], satK) + '</div>';
       let mine = '';
-      if (me && day && !hol && !(sd && d < sd)) {
-        const x = myDay(me, key);
-        mine = '<span class="mmine k-' + x.kind + '">' + (x.kind === 'M' ? 'Mañana' : x.kind === 'T' ? 'Tarde' : x.kind === 'sat' ? 'Sábado' : x.kind === 'vac' ? 'Vacaciones' : 'Libre') + '</span>';
+      if (me && wk) {
+        const sh = (S.schedule[wk].M || []).some(a => a.id === me) ? 'Mañana' : (S.schedule[wk].T || []).some(a => a.id === me) ? 'Tarde' : '';
+        const sat = satDay && !holidayOf(satD) && (satDay.M || []).concat(satDay.T || []).some(a => a.id === me);
+        if (sh) mine = '<span class="mmine k-' + (sh === 'Mañana' ? 'M' : 'T') + '">' + sh + (sat ? ' + sábado' : '') + '</span>';
       }
-      cells.push('<div class="mcell' + (isToday ? ' today' : '') + (d.getDay() === 0 ? ' sun' : '') + '"><button class="mhead" data-act="goto-day" data-d="' + key + '"><span class="mdow">' + DAYS[d.getDay()].slice(0, 3) + '</span><span class="mnum">' + d.getDate() + '</span>' + mine + '</button>' + body + '</div>');
+      const isNow = ymd(w) === ymd(mondayOf(new Date()));
+      rows.push('<div class="wrow' + (isNow ? ' now' : '') + '">' +
+        '<button class="wdate" data-act="goto-day" data-d="' + ymd(w) + '"><strong>' + label + '</strong><span>S' + pad(isoWeek(w)) + '</span>' + mine + '</button>' +
+        '<div class="wcol"><span class="wcap">Mañana</span><div class="mppl">' + (wk ? ppl(S.schedule[wk].M || []) : '<span class="mnote">—</span>') + '</div></div>' +
+        '<div class="wcol"><span class="wcap">Tarde</span><div class="mppl">' + (wk ? ppl(S.schedule[wk].T || []) : '<span class="mnote">—</span>') + '</div></div>' +
+        '<div class="wcol"><span class="wcap">Sábado ' + satD.getDate() + (satD.getMonth() !== m - 1 ? ' ' + MONTHS[satD.getMonth()] : '') + '</span>' + satHtml + '</div>' +
+        '<div class="wcol wnotes' + (notes.length ? '' : ' empty') + '">' + (notes.join('') || '<span class="mnote">—</span>') + '</div>' +
+      '</div>');
     }
     return '<div class="stack">' +
       '<div class="weekbar"><div class="weeknav">' +
@@ -1339,8 +1357,8 @@ tr.past td { opacity: 0.6; }
         '<button class="btn round" data-act="month-next" aria-label="Mes siguiente">›</button>' +
         '<button class="btn sm" data-act="month-now">Este mes</button>' +
       '</div></div>' +
-      '<div class="legend"><span><span class="mlab sh-M">M</span> Mañana ' + range('M') + '</span><span><span class="mlab sh-T">T</span> Tarde ' + range('T') + '</span><span><span class="mlab sh-M">S</span> Sábado ' + satRange() + '</span>' + (me ? '<span><span class="mchip me"><span>' + esc(byId(me).name.split(' ')[0]) + '</span></span> eres tú</span>' : '') + '<span>Pulsa un día para ver su semana</span></div>' +
-      '<div class="month"><div class="mdows">' + ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].map(x => '<span>' + x + '</span>').join('') + '</div><div class="mgrid">' + cells.join('') + '</div></div>' +
+      '<div class="legend"><span>Mañana ' + range('M') + '</span><span>Tarde ' + range('T') + '</span><span>Sábado ' + satRange() + (S.settings.sat.full ? ' (jun–ago: día completo)' : '') + '</span>' + (me ? '<span><span class="mchip me"><span>' + esc(byId(me).name.split(' ')[0]) + '</span></span> eres tú</span>' : '') + '<span>Pulsa una semana para verla día a día</span></div>' +
+      '<div class="wmonth"><div class="whead"><span>Semana</span><span>Mañana (lun–vie)</span><span>Tarde (lun–vie)</span><span>Sábado</span><span>Festivos, vacaciones y guardias</span></div>' + rows.join('') + '</div>' +
       '</div>';
   }
 
