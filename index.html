@@ -417,6 +417,9 @@ tr.past td { opacity: 0.6; }
   const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const need = sh => (S.settings.min && S.settings.min[sh]) || 3;
+  // A partir de una fecha puede cambiar el número de personas por turno (p. ej., al llegar alguien nuevo).
+  const needAt = (sh, key) => { let n = need(sh); (S.settings.minFrom || []).forEach(r => { if (key >= r.from && r[sh]) n = r[sh]; }); return n; };
+  const startedBy = (p, key) => !p.since || p.since <= key;
 
   // ---------- Utilidades de fecha ----------
   const pad = n => String(n).padStart(2, '0');
@@ -628,6 +631,19 @@ tr.past td { opacity: 0.6; }
     S.settings.start = '2026-12-21';
     S.version = 18;
   }
+  if (S.version < 19) {
+    // Sexta persona desde marzo de 2027 y sábados por temporadas.
+    if (!S.staff.some(p => p.id === 's7')) S.staff.push({ id: 's7', name: 'TECNICO_01', role: 'tecnico', shift: 'T', active: true, since: '2027-03-01', until: null, avatar: 'droide' });
+    S.settings.minFrom = [{ from: '2027-03-01', M: 3, T: 3 }];
+    S.settings.sat = Object.assign({}, S.settings.sat, {
+      mode: 'rota', min: 2,
+      season: { months: [4, 5, 9], min: 3 },
+      full: { months: [6, 7, 8], perShift: 2 }
+    });
+    const t = S.settings.start || ymd(mondayOf(new Date()));
+    Object.keys(S.schedule).forEach(k => { if (k >= t) delete S.schedule[k]; });
+    S.version = 19;
+  }
   }
   migrate();
   function save() {
@@ -705,11 +721,18 @@ tr.past td { opacity: 0.6; }
   const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
   const isSat = d => d.getDay() === 6 && !!S.settings.sat;
   const keySat = key => isSat(parse(key));
-  const dayShifts = key => keySat(key) ? ['M'] : SHIFTS;
-  const shTimes = (key, sh) => keySat(key) ? [openMin(), toMin(S.settings.sat.close)] : times(sh);
+  const satFull = d => { const f = S.settings.sat && S.settings.sat.full; return !!f && (f.months || []).includes(d.getMonth() + 1); };
+  const keyFullSat = key => keySat(key) && satFull(parse(key));
+  const dayShifts = key => keySat(key) && !satFull(parse(key)) ? ['M'] : SHIFTS;
+  const shTimes = (key, sh) => keySat(key) && !satFull(parse(key)) ? [openMin(), toMin(S.settings.sat.close)] : times(sh);
   const shRange = (key, sh) => hm(shTimes(key, sh)[0]) + '–' + hm(shTimes(key, sh)[1]);
   const shHours = (key, sh) => { const [a, b] = shTimes(key, sh); return (b - a) / 60; };
-  const needOn = (key, sh) => keySat(key) ? S.settings.sat.min : need(sh);
+  // Personas el sábado: puede variar por meses (temporada alta).
+  const satMin = d => {
+    if (satFull(d)) return S.settings.sat.full.perShift * 2;
+    const t = S.settings.sat.season; return t && (t.months || []).includes(d.getMonth() + 1) ? t.min : S.settings.sat.min;
+  };
+  const needOn = (key, sh) => keySat(key) ? (satFull(parse(key)) ? S.settings.sat.full.perShift : satMin(parse(key))) : needAt(sh, key);
   const canLeadSat = p => isLead(p) || !!(p && p.senior);
   const satRange = () => hm(openMin()) + '–' + S.settings.sat.close;
 
@@ -719,18 +742,23 @@ tr.past td { opacity: 0.6; }
   const SAT_ANCHOR = new Date(2026, 10, 16);
   function satRotation(monday) {
     if (S.settings.sat.mode === 'tarde') return satAfternoon(monday);
-    const team = activeStaff().filter(p => p.role !== 'estudiante');
-    const n = Math.min(S.settings.sat.min, team.length);
+    const all = activeStaff().filter(p => p.role !== 'estudiante');
     const count = {}, last = {};
-    team.forEach(p => { count[p.id] = 0; last[p.id] = -99; });
     const steps = Math.max(0, Math.round((monday - SAT_ANCHOR) / (7 * 864e5)));
     let pickNow = [];
     for (let w = 0; w <= steps; w++) {
       // Un sábado festivo cuenta en la rotación igual: a quienes les tocaba, libran ese día.
+      const satD = addDays(SAT_ANCHOR, w * 7 + 5), satK = ymd(satD);
+      const team = all.filter(p => startedBy(p, satK));
+      // Quien se incorpora empieza con los mismos sábados que el que menos lleva.
+      team.forEach(p => { if (count[p.id] === undefined) { const others = team.filter(x => count[x.id] !== undefined).map(x => count[x.id]); count[p.id] = others.length ? Math.min(...others) : 0; last[p.id] = w - 1; } });
+      const n = Math.min(satMin(satD), team.length);
+      const leadsNeeded = satFull(satD) ? 2 : 1;
       const chosen = [];
       for (let k = 0; k < n; k++) {
         let pool = team.filter(p => !chosen.includes(p));
-        if (k === n - 1 && !chosen.some(canLeadSat) && pool.some(canLeadSat)) pool = pool.filter(canLeadSat);
+        const missing = leadsNeeded - chosen.filter(canLeadSat).length;
+        if (missing > 0 && n - k <= missing && pool.some(canLeadSat)) pool = pool.filter(canLeadSat);
         pool.sort((a, b) => count[a.id] - count[b.id] || last[a.id] - last[b.id] || team.indexOf(a) - team.indexOf(b));
         if (pool[0]) chosen.push(pool[0]);
       }
@@ -738,6 +766,20 @@ tr.past td { opacity: 0.6; }
       pickNow = chosen;
     }
     return pickNow;
+  }
+  // Sábado de día completo: reparte a los elegidos entre mañana y tarde, con un responsable en cada turno.
+  function satSplit(list, monday) {
+    const per = S.settings.sat.full.perShift;
+    const M = [], T = [];
+    const leads = list.filter(canLeadSat), rest = list.filter(p => !canLeadSat(p));
+    const prefT = p => effPref(p, monday) === 'T';
+    leads.sort((a, b) => prefT(a) - prefT(b));
+    if (leads[0]) M.push(leads.shift());
+    if (leads.length) { const iT = leads.findIndex(prefT); T.push(leads.splice(iT >= 0 ? iT : 0, 1)[0]); }
+    leads.concat(rest).sort((a, b) => prefT(a) - prefT(b)).forEach(p => {
+      if (prefT(p) ? T.length < per : M.length >= per) (T.length < per ? T : M).push(p); else (M.length < per ? M : T).push(p);
+    });
+    return { M, T };
   }
   // Fecha desde la que se muestra el cuadrante (antes, nada).
   const startDate = () => (S.settings && S.settings.start) ? parse(S.settings.start) : null;
@@ -749,7 +791,7 @@ tr.past td { opacity: 0.6; }
   function satAfternoon(monday) {
     const team = activeStaff().filter(p => p.role !== 'estudiante');
     const tarde = team.filter(p => effPref(p, monday) === 'T');
-    const extraN = Math.max(0, S.settings.sat.min - tarde.length);
+    const extraN = Math.max(0, satMin(addDays(monday, 5)) - tarde.length);
     let pool = team.filter(p => effPref(p, monday) !== 'T' && !isLead(p));
     if (pool.length < extraN) pool = team.filter(p => !tarde.includes(p));
     const step = Math.max(0, Math.round((monday - SAT_ANCHOR) / (7 * 864e5)));
@@ -864,7 +906,7 @@ tr.past td { opacity: 0.6; }
 
   function generateWeek(monday) {
     const today = todayKey();
-    const act = activeStaff();
+    const actAll = activeStaff();
     const hours = {};
     let changed = 0;
     for (let i = 0; i < 7; i++) {
@@ -878,11 +920,18 @@ tr.past td { opacity: 0.6; }
       if (!isOpenDay(d)) { delete S.schedule[key]; continue; }
       if (isSat(d)) {
         const list = satRotation(monday);
-        list.forEach(p => { hours[p.id] = (hours[p.id] || 0) + shHours(key, 'M'); });
-        S.schedule[key] = { M: assignResp(list, i), T: [] };
+        if (satFull(d)) {
+          const sp = satSplit(list, monday);
+          ['M', 'T'].forEach(sh => sp[sh].forEach(p => { hours[p.id] = (hours[p.id] || 0) + shHours(key, sh); }));
+          S.schedule[key] = { M: assignResp(sp.M, i), T: assignResp(sp.T, i + 1) };
+        } else {
+          list.forEach(p => { hours[p.id] = (hours[p.id] || 0) + shHours(key, 'M'); });
+          S.schedule[key] = { M: assignResp(list, i), T: [] };
+        }
         changed++;
         continue;
       }
+      const act = actAll.filter(p => startedBy(p, key));
       const day = { M: [], T: [] };
       const used = new Set();
       SHIFTS.forEach(sh => {
@@ -895,7 +944,7 @@ tr.past td { opacity: 0.6; }
         // Un responsable por turno (farmacéutico o responsable designado); nadie dobla turno automáticamente.
         const ph = pick(act.filter(p => isLead(p) && !used.has(p.id)));
         if (ph) list.push(ph);
-        while (list.length < need(sh)) {
+        while (list.length < needAt(sh, key)) {
           const c = pick(act.filter(p => p.role !== 'estudiante' && !list.includes(p) && !used.has(p.id)));
           if (!c) break;
           list.push(c);
@@ -1040,7 +1089,7 @@ tr.past td { opacity: 0.6; }
         const list = (S.schedule[key] && S.schedule[key][sh]) || [];
         const iss = shiftIssues(key, sh);
         const ok = !iss.some(x => x.lvl === 'err');
-        html += '<section class="shift sh-' + sh + '"><div class="shift-h"><span><strong>' + (keySat(key) ? 'Mañana' : SH_LABEL[sh]) + '</strong><span class="mono">' + shRange(key, sh) + '</span></span>' +
+        html += '<section class="shift sh-' + sh + '"><div class="shift-h"><span><strong>' + (keySat(key) && !keyFullSat(key) ? 'Mañana' : SH_LABEL[sh]) + '</strong><span class="mono">' + shRange(key, sh) + '</span></span>' +
           '<span class="pill ' + (ok ? 'ok' : 'err') + '" title="' + (ok ? 'Turno cubierto' : 'Turno incompleto') + '">' + list.filter(a => byId(a.id) && activeOn(byId(a.id), key) && byId(a.id).role !== 'estudiante').length + '/' + needOn(key, sh) + '</span></div><ul>';
         list.forEach(a => {
           const p = byId(a.id); if (!p) return;
@@ -1212,7 +1261,7 @@ tr.past td { opacity: 0.6; }
           if (onVac(a.id, key)) return;
           t.h += shHours(key, sh); if (keySat(key)) t.S++;
         }));
-        if (keySat(key)) { sat = day.M || []; satKey = key; }
+        if (keySat(key)) { sat = (day.M || []).concat(day.T || []); satKey = key; }
         else if (!M && day.M && day.M.length) { M = day.M; T = day.T || []; }
       }
       const isNow = ymd(m) === ymd(mondayOf(new Date()));
@@ -1317,7 +1366,7 @@ tr.past td { opacity: 0.6; }
       const k = ymd(addDays(mondayOf(today), w * 7 + 5));
       if (k < todayKey()) continue;
       const day = S.schedule[k];
-      if (day && (day.M || []).some(a => a.id === p.id) && !onVac(p.id, k)) sats.push(k);
+      if (day && (day.M || []).concat(day.T || []).some(a => a.id === p.id) && !onVac(p.id, k)) sats.push(k);
     }
     const myGuards = (S.guards || []).filter(g => g.date >= todayKey() && (g.people || []).includes(p.id)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
     const y = today.getFullYear();
