@@ -650,6 +650,22 @@ tr.past td { opacity: 0.6; }
     if (t1) t1.vacDaysByYear = Object.assign({ 2027: 25 }, t1.vacDaysByYear || {});
     S.version = 20;
   }
+  if (S.version < 21) {
+    // Desde marzo de 2027 TECNICO_01 rota con Aizane y Lorena (una semana de cada tres en el turno distinto).
+    // Anastasia: tardes hasta agosto; desde la semana del 6 de septiembre, solo mañanas.
+    const trio = ['s5', 's6', 's7'];
+    const m0 = new Date(2027, 2, 1);
+    Object.keys(S.weekPlan || {}).sort().forEach(k => {
+      if (k < '2027-03-01') return;
+      const w = Math.round((parse(k) - m0) / (7 * 864e5));
+      const plan = S.weekPlan[k];
+      const sep = k >= '2027-09-06';
+      plan.s4 = sep ? 'M' : 'T';
+      trio.forEach((id, i) => { const odd = i === w % 3; plan[id] = sep ? (odd ? 'M' : 'T') : (odd ? 'T' : 'M'); });
+    });
+    Object.keys(S.schedule).forEach(k => { if (k >= '2027-03-01') delete S.schedule[k]; });
+    S.version = 21;
+  }
   }
   migrate();
   function save() {
