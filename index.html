@@ -709,7 +709,9 @@ tr.past td { opacity: 0.6; }
   const shTimes = (key, sh) => keySat(key) ? [openMin(), toMin(S.settings.sat.close)] : times(sh);
   const shRange = (key, sh) => hm(shTimes(key, sh)[0]) + '–' + hm(shTimes(key, sh)[1]);
   const shHours = (key, sh) => { const [a, b] = shTimes(key, sh); return (b - a) / 60; };
-  const needOn = (key, sh) => keySat(key) ? S.settings.sat.min : need(sh);
+  // Personas el sábado: puede variar por meses (temporada alta).
+  const satMin = d => { const t = S.settings.sat.season; return t && (t.months || []).includes(d.getMonth() + 1) ? t.min : S.settings.sat.min; };
+  const needOn = (key, sh) => keySat(key) ? satMin(parse(key)) : need(sh);
   const canLeadSat = p => isLead(p) || !!(p && p.senior);
   const satRange = () => hm(openMin()) + '–' + S.settings.sat.close;
 
@@ -720,7 +722,6 @@ tr.past td { opacity: 0.6; }
   function satRotation(monday) {
     if (S.settings.sat.mode === 'tarde') return satAfternoon(monday);
     const team = activeStaff().filter(p => p.role !== 'estudiante');
-    const n = Math.min(S.settings.sat.min, team.length);
     const count = {}, last = {};
     team.forEach(p => { count[p.id] = 0; last[p.id] = -99; });
     const steps = Math.max(0, Math.round((monday - SAT_ANCHOR) / (7 * 864e5)));
@@ -728,6 +729,7 @@ tr.past td { opacity: 0.6; }
     for (let w = 0; w <= steps; w++) {
       // Un sábado festivo cuenta en la rotación igual: a quienes les tocaba, libran ese día.
       const chosen = [];
+      const n = Math.min(satMin(addDays(SAT_ANCHOR, w * 7 + 5)), team.length);
       for (let k = 0; k < n; k++) {
         let pool = team.filter(p => !chosen.includes(p));
         if (k === n - 1 && !chosen.some(canLeadSat) && pool.some(canLeadSat)) pool = pool.filter(canLeadSat);
@@ -749,7 +751,7 @@ tr.past td { opacity: 0.6; }
   function satAfternoon(monday) {
     const team = activeStaff().filter(p => p.role !== 'estudiante');
     const tarde = team.filter(p => effPref(p, monday) === 'T');
-    const extraN = Math.max(0, S.settings.sat.min - tarde.length);
+    const extraN = Math.max(0, satMin(addDays(monday, 5)) - tarde.length);
     let pool = team.filter(p => effPref(p, monday) !== 'T' && !isLead(p));
     if (pool.length < extraN) pool = team.filter(p => !tarde.includes(p));
     const step = Math.max(0, Math.round((monday - SAT_ANCHOR) / (7 * 864e5)));
