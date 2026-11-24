@@ -74,6 +74,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--fg); font: 16px/1.45 var(--f-body); font-variant-numeric: tabular-nums; }
 .wrap {
@@ -266,6 +267,45 @@ textarea { font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; min-
 table.year td { padding-block: 6px; }
 tr.nowrow td { background: var(--accent-soft); }
 .nowrap { white-space: nowrap; }
+/* Mes */
+.month { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.mdows, .mgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.mdows span { padding: 8px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--line); text-align: center; }
+.mcell { min-height: 118px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mcell:nth-child(7n) { border-right: 0; }
+.mcell.pad { background: var(--surface-2); }
+.mcell.sun { background: var(--surface-2); }
+.mcell.today { box-shadow: inset 0 0 0 2px var(--accent); }
+.mhead { display: flex; align-items: baseline; gap: 6px; border: 0; background: none; padding: 0; cursor: pointer; color: inherit; text-align: left; font: inherit; }
+.mhead:hover .mnum { color: var(--accent-ink); }
+.mdow { display: none; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+.mnum { font-weight: 700; font-size: 1.05rem; color: var(--brand); }
+:root[data-theme="dark"] .mnum { color: var(--fg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mnum { color: var(--fg); } }
+.mmine { margin-left: auto; font-size: 0.68rem; font-weight: 700; padding: 0 6px; border-radius: 4px; color: var(--surface); background: var(--k, var(--muted)); }
+.mrow { display: flex; gap: 4px; align-items: flex-start; }
+.mlab { flex: none; width: 16px; height: 16px; border-radius: 3px; display: inline-grid; place-items: center; font-size: 0.66rem; font-weight: 700; color: #fff; background: var(--brand-2); }
+.mlab.sh-M { background: var(--brand); } .mlab.sh-T { background: var(--accent-ink); }
+.mppl { display: flex; flex-wrap: wrap; gap: 2px 4px; min-width: 0; }
+.mchip { display: inline-flex; align-items: center; gap: 3px; font-size: 0.74rem; font-weight: 600; white-space: nowrap; }
+.mchip .av { width: 16px; height: 16px; box-shadow: none; border-radius: 30%; }
+.mchip.me { background: var(--accent-soft); color: var(--accent-ink); border-radius: 4px; padding: 0 4px 0 1px; }
+.mchip.vac { opacity: 0.45; text-decoration: line-through; }
+.mnote { font-size: 0.74rem; color: var(--muted); }
+.mnote.hol { color: var(--warn); font-weight: 700; }
+.mnote.guard { color: var(--r-tit); font-weight: 700; }
+@media (max-width: 760px) {
+  .mdows { display: none; }
+  .mgrid { grid-template-columns: 1fr; }
+  .mcell { min-height: 0; border-right: 0; flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 6px 10px; padding: 8px 10px; }
+  .mcell.pad { display: none; }
+  .mhead { width: 64px; flex-direction: column; gap: 0; }
+  .mdow { display: inline; }
+  .mmine { margin-left: 0; margin-top: 2px; }
+  .mcell > .mrow, .mcell > .mnote { flex: 1 1 calc(100% - 80px); }
+  .mrow + .mrow { margin-left: 74px; }
+  .mchip { font-size: 0.82rem; } .mchip .av { width: 20px; height: 20px; }
+}
 body.locked .tabs, body.locked #now, body.locked #main, body.locked #subtitle { display: none; }
 .login { padding: 32px max(16px, env(safe-area-inset-left, 0px)) 48px; display: flex; justify-content: center; }
 .loginbox { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; display: flex; flex-direction: column; gap: 14px; }
@@ -378,6 +418,7 @@ tr.past td { opacity: 0.6; }
       <nav class="tabs" role="tablist" aria-label="Secciones">
         <button role="tab" data-tab="mi" id="tab-mi">Mi horario</button>
         <button role="tab" data-tab="cuadrante" id="tab-cuadrante">Semana</button>
+        <button role="tab" data-tab="mes" id="tab-mes">Mes</button>
         <button role="tab" data-tab="equipo" id="tab-equipo">Equipo</button>
         <button role="tab" data-tab="anual" id="tab-anual">Año</button>
         <button role="tab" data-tab="vacaciones" id="tab-vacaciones">Vacaciones</button>
@@ -1248,6 +1289,61 @@ tr.past td { opacity: 0.6; }
     '</div>';
   }
 
+  // ---------- Render: mes ----------
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const addMonths = (ym, n) => { const [y, m] = (ym || curMonth()).split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); };
+  function curMonth() {
+    let d = new Date(); const sd = startDate();
+    if (sd && d < sd) d = sd;
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1);
+  }
+  function renderMes() {
+    const sd = startDate();
+    if (!ui.month) ui.month = curMonth();
+    const minM = sd ? sd.getFullYear() + '-' + pad(sd.getMonth() + 1) : null;
+    if (minM && ui.month < minM) ui.month = minM;
+    const [y, m] = ui.month.split('-').map(Number);
+    const first = new Date(y, m - 1, 1), last = new Date(y, m, 0);
+    // Asegura el cuadrante de las semanas del mes.
+    for (let w = mondayOf(first); w <= last; w = addDays(w, 7)) if (!weekHasData(w) && !(sd && addDays(w, 6) < sd)) generateWeek(w);
+    const me = ui.me && byId(ui.me) ? ui.me : null;
+    const chips = (list, key) => list.map(a => byId(a.id)).filter(Boolean).map(p => {
+      const vac = onVac(p.id, key);
+      return '<span class="mchip' + (p.id === me ? ' me' : '') + (vac ? ' vac' : '') + '" title="' + esc(p.name + (vac ? ' · vacaciones' : '')) + '">' + avatar(p) + '<span>' + esc(p.name.split(' ')[0]) + '</span></span>';
+    }).join('');
+    const cells = [];
+    for (let i = 0; i < (first.getDay() + 6) % 7; i++) cells.push('<div class="mcell pad"></div>');
+    for (let d = new Date(first); d <= last; d = addDays(d, 1)) {
+      const key = ymd(d), hol = holidayOf(d), day = S.schedule[key];
+      const isToday = key === todayKey();
+      let body = '';
+      if (sd && d < sd) body = '<div class="mnote">—</div>';
+      else if (hol) body = '<div class="mnote hol">Festivo · ' + esc(hol) + '</div>';
+      else if (!isOpenDay(d) || !day) body = '<div class="mnote">Cerrado</div>';
+      else {
+        body = dayShifts(key).map(sh => '<div class="mrow"><span class="mlab sh-' + sh + '">' + (keySat(key) && !keyFullSat(key) ? 'S' : sh) + '</span><div class="mppl">' + chips(day[sh] || [], key) + '</div></div>').join('');
+        const gs = guardsOn(key);
+        if (gs.length) body += '<div class="mnote guard">' + gs.map(guardLabel).join(', ') + '</div>';
+      }
+      let mine = '';
+      if (me && day && !hol && !(sd && d < sd)) {
+        const x = myDay(me, key);
+        mine = '<span class="mmine k-' + x.kind + '">' + (x.kind === 'M' ? 'Mañana' : x.kind === 'T' ? 'Tarde' : x.kind === 'sat' ? 'Sábado' : x.kind === 'vac' ? 'Vacaciones' : 'Libre') + '</span>';
+      }
+      cells.push('<div class="mcell' + (isToday ? ' today' : '') + (d.getDay() === 0 ? ' sun' : '') + '"><button class="mhead" data-act="goto-day" data-d="' + key + '"><span class="mdow">' + DAYS[d.getDay()].slice(0, 3) + '</span><span class="mnum">' + d.getDate() + '</span>' + mine + '</button>' + body + '</div>');
+    }
+    return '<div class="stack">' +
+      '<div class="weekbar"><div class="weeknav">' +
+        '<button class="btn round" data-act="month-prev" aria-label="Mes anterior">‹</button>' +
+        '<span class="range">' + MESES[m - 1].charAt(0).toUpperCase() + MESES[m - 1].slice(1) + ' ' + y + '</span>' +
+        '<button class="btn round" data-act="month-next" aria-label="Mes siguiente">›</button>' +
+        '<button class="btn sm" data-act="month-now">Este mes</button>' +
+      '</div></div>' +
+      '<div class="legend"><span><span class="mlab sh-M">M</span> Mañana ' + range('M') + '</span><span><span class="mlab sh-T">T</span> Tarde ' + range('T') + '</span><span><span class="mlab sh-M">S</span> Sábado ' + satRange() + '</span>' + (me ? '<span><span class="mchip me"><span>' + esc(byId(me).name.split(' ')[0]) + '</span></span> eres tú</span>' : '') + '<span>Pulsa un día para ver su semana</span></div>' +
+      '<div class="month"><div class="mdows">' + ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].map(x => '<span>' + x + '</span>').join('') + '</div><div class="mgrid">' + cells.join('') + '</div></div>' +
+      '</div>';
+  }
+
   // ---------- Render: año ----------
   const isoWeek = d => {
     const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -1564,7 +1660,7 @@ tr.past td { opacity: 0.6; }
     const curMon = sd && beforeStart(new Date()) ? mondayOf(sd) : mondayOf(new Date());
     if (!weekHasData(curMon)) generateWeek(curMon);
     renderNow();
-    const views = { mi: renderMi, guardias: renderGuardias, cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, vacaciones: renderVacaciones, ajustes: renderAjustes };
+    const views = { mes: renderMes, mi: renderMi, guardias: renderGuardias, cuadrante: renderCuadrante, equipo: renderEquipo, anual: renderAnual, vacaciones: renderVacaciones, ajustes: renderAjustes };
     document.getElementById('tab-ajustes').hidden = !sync.canEdit;
     if (!sync.canEdit && ui.tab === 'ajustes') ui.tab = 'cuadrante';
     // En la web: la farmacia no tiene «Mi horario»; el equipo no ve «Equipo».
@@ -1755,7 +1851,7 @@ tr.past td { opacity: 0.6; }
   }
 
   // Quien solo consulta ve el cuadrante sin controles de edición.
-  const VIEW_ACTS = ['prev', 'next', 'thisweek', 'goto-week', 'year-prev', 'year-next', 'me-pick', 'me-change', 'owner-login', 'owner-cancel', 'logout'];
+  const VIEW_ACTS = ['prev', 'next', 'thisweek', 'goto-week', 'year-prev', 'year-next', 'me-pick', 'me-change', 'owner-login', 'owner-cancel', 'logout', 'month-prev', 'month-next', 'month-now', 'goto-day'];
   function applyReadOnly() {
     const m = document.getElementById('main');
     const alta = m.querySelector('#alta-form'); if (alta && alta.closest('.panel')) alta.closest('.panel').remove();
@@ -1841,6 +1937,10 @@ tr.past td { opacity: 0.6; }
       case 'goto-week': ui.week = parse(el.dataset.w); ui.tab = 'cuadrante'; window.scrollTo(0, 0); break;
       case 'year-prev': ui.year--; break;
       case 'year-next': ui.year++; break;
+      case 'month-prev': ui.month = addMonths(ui.month, -1); break;
+      case 'month-next': ui.month = addMonths(ui.month, 1); break;
+      case 'month-now': ui.month = null; break;
+      case 'goto-day': ui.week = mondayOf(parse(el.dataset.d)); ui.tab = 'cuadrante'; window.scrollTo(0, 0); break;
       case 'regen': ui.confirm = 'regen'; break;
       case 'regen-yes': generateWeek(ui.week); ui.confirm = null; toast('Cuadrante generado para la semana.'); break;
       case 'cancel': ui.confirm = null; ui.editing = null; break;
