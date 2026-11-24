@@ -616,6 +616,13 @@ tr.past td { opacity: 0.6; }
     S.guards = S.guards || [];
     S.version = 16;
   }
+  if (S.version < 17) {
+    // Sábados: los que hacen tarde esa semana + 1 persona de mañana (3 en total).
+    S.settings.sat = Object.assign({ close: '14:00' }, S.settings.sat, { min: 3, mode: 'tarde' });
+    const t = ymd(mondayOf(new Date()));
+    Object.keys(S.schedule).forEach(k => { if (k >= t) delete S.schedule[k]; });
+    S.version = 17;
+  }
   }
   migrate();
   function save() {
@@ -706,6 +713,7 @@ tr.past td { opacity: 0.6; }
   // y siempre al menos una persona que pueda llevar el sábado.
   const SAT_ANCHOR = new Date(2026, 10, 16);
   function satRotation(monday) {
+    if (S.settings.sat.mode === 'tarde') return satAfternoon(monday);
     const team = activeStaff().filter(p => p.role !== 'estudiante');
     const n = Math.min(S.settings.sat.min, team.length);
     const count = {}, last = {};
@@ -725,6 +733,19 @@ tr.past td { opacity: 0.6; }
       pickNow = chosen;
     }
     return pickNow;
+  }
+  // Sábado del equipo de tarde: quienes hacen tarde esa semana y, hasta completar, personas
+  // de mañana que no son responsables, por turnos semana a semana.
+  function satAfternoon(monday) {
+    const team = activeStaff().filter(p => p.role !== 'estudiante');
+    const tarde = team.filter(p => effPref(p, monday) === 'T');
+    const extraN = Math.max(0, S.settings.sat.min - tarde.length);
+    let pool = team.filter(p => effPref(p, monday) !== 'T' && !isLead(p));
+    if (pool.length < extraN) pool = team.filter(p => !tarde.includes(p));
+    const step = Math.max(0, Math.round((monday - SAT_ANCHOR) / (7 * 864e5)));
+    const extra = [];
+    for (let k = 0; k < extraN && pool.length; k++) extra.push(pool[(step * extraN + k) % pool.length]);
+    return tarde.concat(extra.filter((p, i, a) => a.indexOf(p) === i));
   }
   const initials = p => { const w = p.name.trim().split(/\s+/); return w.length > 1 ? (w[0][0] + w[1][0]).toUpperCase() : w[0].slice(0, 2); };
   // ---------- Avatares frikis (dibujos propios, homenaje en broma) ----------
@@ -1413,10 +1434,15 @@ tr.past td { opacity: 0.6; }
           '<div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">' +
             '<div class="field"><label for="set-sat-close">Cierre del sábado</label><select id="set-sat-close" data-act="set-sat-close">' +
               ['12:00', '13:00', '13:30', '14:00', '14:30', '15:00'].map(o => '<option' + (o === S.settings.sat.close ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></div>' +
+            '<div class="field"><label for="set-sat-mode">Quién hace el sábado</label><select id="set-sat-mode" data-act="set-sat-mode">' +
+              '<option value="tarde"' + (S.settings.sat.mode === 'tarde' ? ' selected' : '') + '>Los de la tarde de esa semana + mañana</option>' +
+              '<option value="rota"' + (S.settings.sat.mode !== 'tarde' ? ' selected' : '') + '>Rotación entre todo el equipo</option></select></div>' +
             '<div class="field"><label for="set-sat-min">Personas el sábado</label><select id="set-sat-min" data-act="set-sat-min">' +
               [1, 2, 3, 4].map(n => '<option' + (n === S.settings.sat.min ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div>' +
           '</div>' +
-          '<p class="note">Sábado <span class="mono">' + satRange() + '</span>. Rotan todas las personas por igual y siempre entra al menos una que pueda llevar el sábado (se marca en Equipo).</p>' +
+          '<p class="note">Sábado <span class="mono">' + satRange() + '</span>. ' + (S.settings.sat.mode === 'tarde'
+            ? 'Hacen el sábado quienes están de tarde esa semana; hasta completar, entra por turnos alguien de mañana que no es responsable.'
+            : 'Rotan todas las personas por igual y siempre entra al menos una que pueda llevar el sábado (se marca en Equipo).') + '</p>' +
           '<div class="field"><label>Días de apertura</label><div class="daychecks">' +
             order.map(d => '<label><input type="checkbox" data-act="set-day" value="' + d + '"' + (S.settings.days.includes(d) ? ' checked' : '') + '> ' + DAYS[d] + '</label>').join('') +
           '</div></div>' +
@@ -1823,6 +1849,11 @@ tr.past td { opacity: 0.6; }
       list.push({ id: p.id, resp: p.role === 'estudiante' ? 'practicas' : hasCounter && !isPharm(p) ? 'mostrador' : (isPharm(p) && list.some(x => isPharm(byId(x.id))) ? 'gestion' : 'mostrador') });
     } else if (act === 'set-sat-close') {
       S.settings.sat.close = el.value;
+    } else if (act === 'set-sat-mode') {
+      S.settings.sat.mode = el.value;
+      const t = ymd(mondayOf(new Date()));
+      Object.keys(S.schedule).forEach(k => { if (k >= t && keySat(k)) delete S.schedule[k]; });
+      Object.keys(S.schedule).filter(k => k >= t).map(k => ymd(mondayOf(parse(k)))).filter((v, i, a) => a.indexOf(v) === i).forEach(w => generateWeek(parse(w)));
     } else if (act === 'set-sat-min') {
       S.settings.sat.min = Number(el.value);
     } else if (act === 'set-min') {
