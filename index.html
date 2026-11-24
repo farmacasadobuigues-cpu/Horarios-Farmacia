@@ -644,6 +644,12 @@ tr.past td { opacity: 0.6; }
     Object.keys(S.schedule).forEach(k => { if (k >= t) delete S.schedule[k]; });
     S.version = 19;
   }
+  if (S.version < 20) {
+    // TECNICO_01 entra en marzo: vacaciones proporcionales en 2027.
+    const t1 = S.staff.find(p => p.id === 's7');
+    if (t1) t1.vacDaysByYear = Object.assign({ 2027: 25 }, t1.vacDaysByYear || {});
+    S.version = 20;
+  }
   }
   migrate();
   function save() {
@@ -713,7 +719,8 @@ tr.past td { opacity: 0.6; }
       const past = yesterday >= y0 ? clipDays(v, y0, yesterday < y1 ? yesterday : y1) : 0;
       taken += past; planned += all - past;
     });
-    const total = vacAllowance();
+    const pp = byId(id);
+    const total = (pp && pp.vacDaysByYear && pp.vacDaysByYear[year]) || vacAllowance();
     return { taken, planned, total, left: total - taken, free: total - taken - planned };
   }
   const isLead = p => !!p && (isPharm(p) || !!p.lead);
@@ -1437,6 +1444,7 @@ tr.past td { opacity: 0.6; }
       return '<article class="vcard">' +
         '<div class="vhead"><span class="person">' + avatar(p) + '<span class="pcap">' + esc(p.name) + '<small>' + ROLES[p.role].short + '</small></span></span>' +
           '<div class="vleft"><strong>' + sm.left + '</strong><span>días pendientes<br>de disfrutar</span></div></div>' +
+        (sm.total !== vacAllowance() ? '<div class="note">' + sm.total + ' días en ' + year + ' (proporcional a su incorporación)</div>' : '') +
         '<div class="vbar" role="img" aria-label="' + sm.taken + ' disfrutados, ' + sm.planned + ' con fecha y ' + Math.max(0, sm.free) + ' sin fecha de ' + sm.total + '">' +
           '<span class="vt" style="width:' + pct(sm.taken) + '%"></span><span class="vp" style="width:' + pct(sm.planned) + '%"></span></div>' +
         '<div class="vnums"><span><i class="vt"></i>Disfrutados <strong>' + sm.taken + '</strong></span><span><i class="vp"></i>Con fecha <strong>' + sm.planned + '</strong></span><span><i class="vf"></i>Sin fecha <strong>' + Math.max(0, sm.free) + '</strong></span></div>' +
