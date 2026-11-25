@@ -714,6 +714,16 @@ tr.past td { opacity: 0.6; }
     Object.keys(S.schedule).forEach(k => { if (k >= '2027-03-01') delete S.schedule[k]; });
     S.version = 21;
   }
+  if (S.version < 22) {
+    // Ramiro empieza 2027 de mañana (semana del 4 de enero) y Luci de tarde; luego alternan cada semana.
+    Object.keys(S.weekPlan || {}).forEach(k => {
+      if (k < '2027-01-04') return;
+      const plan = S.weekPlan[k];
+      if (plan.s2 && plan.s3) { const t = plan.s2; plan.s2 = plan.s3; plan.s3 = t; }
+    });
+    Object.keys(S.schedule).forEach(k => { if (k >= '2027-01-04') delete S.schedule[k]; });
+    S.version = 22;
+  }
   }
   migrate();
   function save() {
